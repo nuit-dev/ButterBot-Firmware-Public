@@ -96,6 +96,12 @@
 
 #include "cst_cg.h"
 
+/* MODIFIED (CircuitMess 2026): converted from double to single precision
+   (mlpg_float_t, see cst_vc.h) — the ESP32-S3 FPU is single-precision only.
+   The unused Gaussian-likelihood computation was removed (its result was
+   discarded at the call site and its determinant/pow(2*PI, dim) math cannot
+   be represented in single precision). */
+
 #define	LENGTH 256
 #define	INFTY ((double) 1.0e+38)
 #define	INFTY2 ((double) 1.0e+19)
@@ -114,8 +120,8 @@
 typedef struct _DWin {
     int	num;		/* number of static + deltas */
     int **width;	/* width [0..num-1][0(left) 1(right)] */
-    double **coef;	/* coefficient [0..num-1][length[0]..length[1]] */
-    double **coef_ptrs;	/* keeps the pointers so we can free them */
+    mlpg_float_t **coef;	/* coefficient [0..num-1][length[0]..length[1]] */
+    mlpg_float_t **coef_ptrs;	/* keeps the pointers so we can free them */
     int maxw[2];	/* max width [0(left) 1(right)] */
 } DWin;
 
@@ -125,13 +131,13 @@ typedef struct _PStreamChol {
     int T;		/* number of frames */
     int width;		/* width of WSW */
     DWin dw;
-    double **mseq;	/* sequence of mean vector */
-    double **ivseq;	/* sequence of invarsed covariance vector */
-    double ***ifvseq;	/* sequence of invarsed full covariance vector */
-    double **R;		/* WSW[T][range] */
-    double *r;		/* WSM [T] */
-    double *g;		/* g [T] */
-    double **c;		/* parameter c */
+    mlpg_float_t **mseq;	/* sequence of mean vector */
+    mlpg_float_t **ivseq;	/* sequence of invarsed covariance vector */
+    mlpg_float_t ***ifvseq;	/* sequence of invarsed full covariance vector */
+    mlpg_float_t **R;		/* WSW[T][range] */
+    mlpg_float_t *r;		/* WSM [T] */
+    mlpg_float_t *g;		/* g [T] */
+    mlpg_float_t **c;		/* parameter c */
 } PStreamChol;
 
 
@@ -150,7 +156,7 @@ typedef struct MLPGPARA_STRUCT {
     LVECTOR clsidxv;
     DVECTOR clsdetv;
     DMATRIX clscov;
-    double vdet;
+    mlpg_float_t vdet;
     DVECTOR vm;
     DVECTOR vv;
     DVECTOR var;
@@ -158,19 +164,18 @@ typedef struct MLPGPARA_STRUCT {
 
 static MLPGPARA xmlpgpara_init(int dim, int dim2, int dnum, int clsnum);
 static void xmlpgparafree(MLPGPARA param);
-static double get_like_pdfseq_vit(int dim, int dim2, int dnum, int clsnum,
-                                  MLPGPARA param, 
-                                  float **model, 
-                                  XBOOL dia_flag);
+/* MODIFIED (CircuitMess 2026): was get_like_pdfseq_vit returning the (unused)
+   likelihood; now only builds the [U'*M U'] pdf sequence */
+static void get_pdfseq_vit(int dim, int dim2, int dnum, int clsnum,
+                           MLPGPARA param,
+                           float **model,
+                           XBOOL dia_flag);
 #if 0
 static double get_like_gv(long dim2, long dnum, MLPGPARA param);
 static void sm_mvav(DMATRIX mat, long hlen);
 #endif
-static void get_dltmat(DMATRIX mat, DWin *dw, int dno, DMATRIX dmat);
-
-
-static double *dcalloc(int x, int xoff);
-static double **ddcalloc(int x, int y, int xoff, int yoff);
+static mlpg_float_t *dcalloc(int x, int xoff);
+static mlpg_float_t **ddcalloc(int x, int y, int xoff, int yoff);
 
 /***********************************/
 /* ML using Choleski decomposition */
@@ -220,22 +225,8 @@ static double get_gauss_dia5(double det,
                              DVECTOR invcovvec);	/* dim */
 #endif
 
-static double get_gauss_full(long clsidx,
-                             DVECTOR vec,		/* [dim] */
-                             DVECTOR detvec,		/* [clsnum] */
-                             DMATRIX weightmat,	        /* [clsnum][1] */
-                             DMATRIX meanvec,		/* [clsnum][dim] */
-                             DMATRIX invcovmat);	/* [clsnum * dim][dim] */
-static double get_gauss_dia(long clsidx,
-                            DVECTOR vec,		/* [dim] */
-                            DVECTOR detvec,		/* [clsnum] */
-                            DMATRIX weightmat,		/* [clsnum][1] */
-                            DMATRIX meanmat,		/* [clsnum][dim] */
-                            DMATRIX invcovmat);	        /* [clsnum][dim] */
-static double cal_xmcxmc(long clsidx,
-		  DVECTOR x,
-                         DMATRIX mm,	/* [num class][dim] */
-                         DMATRIX cm);	/* [num class * dim][dim] */
+/* MODIFIED (CircuitMess 2026): get_gauss_full/get_gauss_dia/cal_xmcxmc
+   removed together with the unused likelihood computation */
 
 #if 0
 static void get_gv_mlpgpara(MLPGPARA param, char *vmfile, char *vvfile,

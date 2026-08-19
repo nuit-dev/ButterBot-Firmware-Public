@@ -34,7 +34,7 @@ SpeechGen::SpeechGen(){
 
 	fliteThread = std::make_unique<Threaded>([this]() {
 		fliteThreadFunc();
-	}, "flite", 0, 3 * 1024, 7, 1, false);
+	}, "flite", 0, 12 * 1024, 7, 1, false);
 
 	fliteThread->start();
 }
@@ -117,6 +117,9 @@ void SpeechGen::fliteThreadFunc(){
 
 	CMF_LOG(SpeechGen, LogLevel::Debug, "flite start synth");
 
+	synthStartMillis = millis();
+	awaitingFirstChunk = true;
+
 	switch(fliteInputType){
 		case InputType::Text:
 			flite_text_to_speech(fliteInput.c_str(), voice, "stream");
@@ -135,6 +138,14 @@ void SpeechGen::fliteThreadFunc(){
 }
 
 int SpeechGen::fliteCallback(const cst_wave* w, int start, int size, int last, cst_audio_streaming_info* asi){
+	// Yield so IDLE1 can reset the task watchdog even if synthesis runs slower than real-time
+	vTaskDelay(1);
+
+	if(awaitingFirstChunk){
+		awaitingFirstChunk = false;
+		CMF_LOG(SpeechGen, LogLevel::Debug, "first audio chunk after %lu ms", millis() - synthStartMillis);
+	}
+
 	if(abort){
 		CMF_LOG(SpeechGen, LogLevel::Debug, "fliteCallback abort");
 		return CST_AUDIO_STREAM_STOP;

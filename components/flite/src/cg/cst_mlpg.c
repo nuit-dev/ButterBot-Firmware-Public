@@ -82,6 +82,18 @@
 /*  ML-Based Parameter Generation                                    */
 /*                                                                   */
 /*-------------------------------------------------------------------*/
+/*                                                                   */
+/*  MODIFIED (CircuitMess 2026): converted from double to single     */
+/*  precision (mlpg_float_t, see cst_vc.h) — the ESP32-S3 FPU is     */
+/*  single-precision only, and software-emulated doubles made this   */
+/*  pre-pass dominate latency-to-first-audio. The Gaussian           */
+/*  likelihood computation (get_gauss_full/get_gauss_dia/cal_xmcxmc, */
+/*  the determinant in xget_detvec_diamat2inv, and get_dltmat) was   */
+/*  removed: its result was never consumed, and its intermediate     */
+/*  values (running determinant products, pow(2*PI, dim)) cannot be  */
+/*  represented in single precision.                                 */
+/*                                                                   */
+/*-------------------------------------------------------------------*/
 
 #include "cst_alloc.h"
 #include "cst_string.h"
@@ -101,23 +113,25 @@ static MLPGPARA xmlpgpara_init(int dim, int dim2, int dnum,
     
     /* memory allocation */
     param = mlpg_alloc(1,struct MLPGPARA_STRUCT);
-    param->ov = xdvalloc(dim);
+    /* MODIFIED (CircuitMess 2026): ov/flkv/dltm/wght/clsdetv were only used
+       by the removed likelihood computation */
+    param->ov = NODATA;
     param->iuv = NODATA;
     param->iumv = NODATA;
-    param->flkv = xdvalloc(dnum);
+    param->flkv = NODATA;
     param->stm = NODATA;
-    param->dltm = xdmalloc(dnum, dim2);
+    param->dltm = NODATA;
     param->pdf = NODATA;
     param->detvec = NODATA;
-    param->wght = xdmalloc(clsnum, 1);
+    param->wght = NODATA;
     param->mean = xdmalloc(clsnum, dim);
     param->cov = NODATA;
     param->clsidxv = NODATA;
     /* dia_flag */
-	param->clsdetv = xdvalloc(1);
+	param->clsdetv = NODATA;
 	param->clscov = xdmalloc(1, dim);
 
-    param->vdet = 1.0;
+    param->vdet = 1.0f;
     param->vm = NODATA;
     param->vv = NODATA;
     param->var = NODATA;
@@ -151,48 +165,34 @@ static void xmlpgparafree(MLPGPARA param)
     return;
 }
 
-static double get_like_pdfseq_vit(int dim, int dim2, int dnum, int clsnum,
-                                  MLPGPARA param, 
-                                  float **model, 
-                                  XBOOL dia_flag)
+/* MODIFIED (CircuitMess 2026): was get_like_pdfseq_vit; the likelihood it
+   computed was discarded at the call site, so only the [U'*M U'] pdf
+   construction is kept */
+static void get_pdfseq_vit(int dim, int dim2, int dnum, int clsnum,
+                           MLPGPARA param,
+                           float **model,
+                           XBOOL dia_flag)
 {
     long d, c, k, l, j;
-    double sumgauss;
-    double like = 0.0;
 
-    for (d = 0, like = 0.0; d < dnum; d++) {
-	/* read weight and mean sequences */
-        param->wght->data[0][0] = 0.9; /* FIXME weights */
+    for (d = 0; d < dnum; d++) {
+	/* read mean sequence */
         for (j=0; j<dim; j++)
             param->mean->data[0][j] = model[d][(j+1)*2];
 
-	/* observation vector */
-	for (k = 0; k < dim2; k++) {
-	    param->ov->data[k] = param->stm->data[d][k];
-	    param->ov->data[k + dim2] = param->dltm->data[d][k];
-	}
-
 	/* mixture index */
         c = d;
-	param->clsdetv->data[0] = param->detvec->data[c];
 
-	/* calculating likelihood */
+	/* inverse covariance for this frame */
 	if (dia_flag == XTRUE) {
 	    for (k = 0; k < param->clscov->col; k++)
 		param->clscov->data[0][k] = param->cov->data[c][k];
-	    sumgauss = get_gauss_dia(0, param->ov, param->clsdetv,
-				     param->wght, param->mean, param->clscov);
 	} else {
 	    for (k = 0; k < param->clscov->row; k++)
 		for (l = 0; l < param->clscov->col; l++)
 		    param->clscov->data[k][l] =
 			param->cov->data[k + param->clscov->row * c][l];
-	    sumgauss = get_gauss_full(0, param->ov, param->clsdetv,
-				      param->wght, param->mean, param->clscov);
 	}
-	if (sumgauss <= 0.0) param->flkv->data[d] = -1.0 * INFTY2;
-	else param->flkv->data[d] = log(sumgauss);
-	like += param->flkv->data[d];
 
 	/* estimating U', U'*M */
 	if (dia_flag == XTRUE) {
@@ -205,7 +205,7 @@ static double get_like_pdfseq_vit(int dim, int dim2, int dnum, int clsnum,
 	} else {
 	    /* PDF [U'*M U'] */
 	    for (k = 0; k < dim; k++) {
-		param->pdf->data[d][k] = 0.0;
+		param->pdf->data[d][k] = 0.0f;
 		for (l = 0; l < dim; l++) {
 		    param->pdf->data[d][k * dim + dim + l] =
 			param->clscov->data[k][l];
@@ -216,9 +216,7 @@ static double get_like_pdfseq_vit(int dim, int dim2, int dnum, int clsnum,
 	}
     }
 
-    like /= (double)dnum;
-
-    return like;
+    return;
 }
 
 #if 0
@@ -275,53 +273,24 @@ static void sm_mvav(DMATRIX mat, long hlen)
 }
 #endif
 
-static void get_dltmat(DMATRIX mat, DWin *dw, int dno, DMATRIX dmat)
+/* MODIFIED (CircuitMess 2026): get_dltmat removed — it only computed the
+   delta observations consumed by the removed likelihood computation */
+
+static mlpg_float_t *dcalloc(int x, int xoff)
 {
-    int i, j, k, tmpnum;
+    mlpg_float_t *ptr;
 
-    tmpnum = (int)mat->row - dw->width[dno][WRIGHT];
-    for (k = dw->width[dno][WRIGHT]; k < tmpnum; k++)	/* time index */
-	for (i = 0; i < (int)mat->col; i++)	/* dimension index */
-	    for (j = dw->width[dno][WLEFT], dmat->data[k][i] = 0.0;
-		 j <= dw->width[dno][WRIGHT]; j++)
-		dmat->data[k][i] += mat->data[k + j][i] * dw->coef[dno][j];
-
-    for (i = 0; i < (int)mat->col; i++) {		/* dimension index */
-	for (k = 0; k < dw->width[dno][WRIGHT]; k++)		/* time index */
-	    for (j = dw->width[dno][WLEFT], dmat->data[k][i] = 0.0;
-		 j <= dw->width[dno][WRIGHT]; j++)
-		if (k + j >= 0)
-		    dmat->data[k][i] += mat->data[k + j][i] * dw->coef[dno][j];
-		else
-		    dmat->data[k][i] += (2.0 * mat->data[0][i] - mat->data[-k - j][i]) * dw->coef[dno][j];
-	for (k = tmpnum; k < (int)mat->row; k++)	/* time index */
-	    for (j = dw->width[dno][WLEFT], dmat->data[k][i] = 0.0;
-		 j <= dw->width[dno][WRIGHT]; j++)
-		if (k + j < (int)mat->row)
-		    dmat->data[k][i] += mat->data[k + j][i] * dw->coef[dno][j];
-		else
-		    dmat->data[k][i] += (2.0 * mat->data[mat->row - 1][i] - mat->data[mat->row - k - j + mat->row - 2][i]) * dw->coef[dno][j];
-    }
-
-    return;
-}
-
-
-static double *dcalloc(int x, int xoff)
-{
-    double *ptr;
-
-    ptr = mlpg_alloc(x,double);
+    ptr = mlpg_alloc(x,mlpg_float_t);
     /* ptr += xoff; */ /* Just not going to allow this */
     return(ptr);
 }
 
-static double **ddcalloc(int x, int y, int xoff, int yoff)
+static mlpg_float_t **ddcalloc(int x, int y, int xoff, int yoff)
 {
-    double **ptr;
+    mlpg_float_t **ptr;
     int i;
 
-    ptr = mlpg_alloc(x,double *);
+    ptr = mlpg_alloc(x,mlpg_float_t *);
     for (i = 0; i < x; i++) ptr[i] = dcalloc(y, yoff);
     /* ptr += xoff; */ /* Just not going to allow this */
     return(ptr);
@@ -344,20 +313,20 @@ static void InitDWin(PStreamChol *pst, const float *dynwin, int fsize)
     for (i = 0; i < pst->dw.num; i++)
         pst->dw.width[i] = mlpg_alloc(2,int);
 
-    pst->dw.coef = mlpg_alloc(pst->dw.num, double *);
-    pst->dw.coef_ptrs = mlpg_alloc(pst->dw.num, double *);
+    pst->dw.coef = mlpg_alloc(pst->dw.num, mlpg_float_t *);
+    pst->dw.coef_ptrs = mlpg_alloc(pst->dw.num, mlpg_float_t *);
     /* window for static parameter	WLEFT = 0, WRIGHT = 1 */
     pst->dw.width[0][WLEFT] = pst->dw.width[0][WRIGHT] = 0;
-    pst->dw.coef_ptrs[0] = mlpg_alloc(1,double);
+    pst->dw.coef_ptrs[0] = mlpg_alloc(1,mlpg_float_t);
     pst->dw.coef[0] = pst->dw.coef_ptrs[0];
-    pst->dw.coef[0][0] = 1.0;
+    pst->dw.coef[0][0] = 1.0f;
 
     /* set delta coefficients */
     for (i = 1; i < pst->dw.num; i++) {
-        pst->dw.coef_ptrs[i] = mlpg_alloc(fsize, double);
+        pst->dw.coef_ptrs[i] = mlpg_alloc(fsize, mlpg_float_t);
 	pst->dw.coef[i] = pst->dw.coef_ptrs[i];
-        for (j=0; j<fsize; j++) /* FIXME make dynwin doubles for memmove */
-            pst->dw.coef[i][j] = (double)dynwin[j];
+        for (j=0; j<fsize; j++)
+            pst->dw.coef[i][j] = dynwin[j];
 	/* set pointer */
 	leng = fsize / 2;			/* L (fsize = 2 * L + 1) */
 	pst->dw.coef[i] += leng;		/* [L] -> [0]	center */
@@ -452,18 +421,18 @@ static void mlpgChol(PStreamChol *pst)
 static void calc_R_and_r(PStreamChol *pst, const int m)
 {
     int i, j, k, l, n;
-    double   wu;
-   
+    mlpg_float_t   wu;
+
     for (i = 0; i < pst->T; i++) {
 	pst->r[i] = pst->mseq[i][m];
 	pst->R[i][0] = pst->ivseq[i][m];
-      
-	for (j = 1; j < pst->width; j++) pst->R[i][j] = 0.0;
-      
+
+	for (j = 1; j < pst->width; j++) pst->R[i][j] = 0.0f;
+
 	for (j = 1; j < pst->dw.num; j++) {
 	    for (k = pst->dw.width[j][0]; k <= pst->dw.width[j][1]; k++) {
 		n = i + k;
-		if (n >= 0 && n < pst->T && pst->dw.coef[j][-k] != 0.0) {
+		if (n >= 0 && n < pst->T && pst->dw.coef[j][-k] != 0.0f) {
 		    l = j * (pst->order + 1) + m;
 		    pst->r[i] += pst->dw.coef[j][-k] * pst->mseq[n][l]; 
 		    wu = pst->dw.coef[j][-k] * pst->ivseq[n][l];
@@ -471,7 +440,7 @@ static void calc_R_and_r(PStreamChol *pst, const int m)
 		    for (l = 0; l < pst->width; l++) {
 			n = l-k;
 			if (n <= pst->dw.width[j][1] && i + l < pst->T &&
-			    pst->dw.coef[j][n] != 0.0)
+			    pst->dw.coef[j][n] != 0.0f)
 			    pst->R[i][l] += wu * pst->dw.coef[j][n];
 		    }
 		}
@@ -487,7 +456,10 @@ static void Choleski(PStreamChol *pst)
 {
     int t, j, k;
 
-    pst->R[0][0] = sqrt(pst->R[0][0]);
+    /* MODIFIED (CircuitMess 2026): clamp guards against sqrtf of a small
+       negative value from single-precision round-off */
+    if (pst->R[0][0] < 1e-12f) pst->R[0][0] = 1e-12f;
+    pst->R[0][0] = sqrtf(pst->R[0][0]);
 
     for (j = 1; j < pst->width; j++) pst->R[0][j] /= pst->R[0][0];
 
@@ -495,8 +467,9 @@ static void Choleski(PStreamChol *pst)
 	for (j = 1; j < pst->width; j++)
 	    if (t - j >= 0)
 		pst->R[t][0] -= pst->R[t - j][j] * pst->R[t - j][j];
-         
-	pst->R[t][0] = sqrt(pst->R[t][0]);
+
+	if (pst->R[t][0] < 1e-12f) pst->R[t][0] = 1e-12f;
+	pst->R[t][0] = sqrtf(pst->R[t][0]);
          
 	for (j = 1; j < pst->width; j++) {
 	    for (k = 0; k < pst->dw.maxw[WRIGHT]; k++)
@@ -515,14 +488,14 @@ static void Choleski(PStreamChol *pst)
 static void Choleski_forward(PStreamChol *pst)
 {
     int t, j;
-    double hold;
-   
+    mlpg_float_t hold;
+
     pst->g[0] = pst->r[0] / pst->R[0][0];
 
     for (t=1; t < pst->T; t++) {
-	hold = 0.0;
+	hold = 0.0f;
 	for (j = 1; j < pst->width; j++)
-	    if (t - j >= 0 && pst->R[t - j][j] != 0.0)
+	    if (t - j >= 0 && pst->R[t - j][j] != 0.0f)
 		hold += pst->R[t - j][j] * pst->g[t - j];
 	pst->g[t] = (pst->r[t] - hold) / pst->R[t][0];
     }
@@ -534,14 +507,14 @@ static void Choleski_forward(PStreamChol *pst)
 static void Choleski_backward(PStreamChol *pst, const int m)
 {
     int t, j;
-    double hold;
-   
+    mlpg_float_t hold;
+
     pst->c[pst->T - 1][m] = pst->g[pst->T - 1] / pst->R[pst->T - 1][0];
 
     for (t = pst->T - 2; t >= 0; t--) {
-	hold = 0.0;
+	hold = 0.0f;
 	for (j = 1; j < pst->width; j++)
-	    if (t + j < pst->T && pst->R[t][j] != 0.0)
+	    if (t + j < pst->T && pst->R[t][j] != 0.0f)
 		hold += pst->R[t][j] * pst->c[t + j][m];
 	pst->c[t][m] = (pst->g[t] - hold) / pst->R[t][0];
    }
@@ -698,91 +671,36 @@ static void calc_vargrad(PStreamChol *pst, const int m, double alpha, double n,
 #endif
 
 /* diagonal covariance */
-static DVECTOR xget_detvec_diamat2inv(DMATRIX covmat)	/* [num class][dim] */
+/* MODIFIED (CircuitMess 2026): was xget_detvec_diamat2inv. The determinant
+   it accumulated was only consumed by the removed likelihood computation
+   (and would underflow single precision anyway), so this now just inverts
+   the covariances in place, with the original magic-number fallback for
+   non-positive entries. */
+static void diamat2inv(DMATRIX covmat)	/* [num class][dim] */
 {
-    long dim, clsnum;
     long i, j;
-    double det;
-    DVECTOR detvec = NODATA;
     /* In cases where the determinant of the matrix ends up being */
     /* zero, we can fix this by artificially setting the covariance */
     /* to be a magic number. I chose this magic number by computing */
     /* the mean of all MCEP SDs of all leaves in a standard RMS  */
     /* voice. - Prasanna */
-    /* double magic_covariance = 0.0962*0.0962; */
-    double magic_covariance = 0.0962;
+    /* mlpg_float_t magic_covariance = 0.0962*0.0962; */
+    mlpg_float_t magic_covariance = 0.0962f;
 
-    clsnum = covmat->row;
-    dim = covmat->col;
-    /* memory allocation */
-    detvec = xdvalloc(clsnum);
-    for (i = 0; i < clsnum; i++) {
-	for (j = 0, det = 1.0; j < dim; j++) {
-	    det *= covmat->data[i][j];
-	    if (det > 0.0) {
-		covmat->data[i][j] = 1.0 / covmat->data[i][j];
-	    } else {
-                covmat->data[i][j] = 1.0 / magic_covariance;
-                det = pow(magic_covariance, j+1); 
-		/* cst_errmsg("error:(class %ld) determinant <= 0, det = %f\n", i, det); */
-	    }
+    for (i = 0; i < covmat->row; i++) {
+	for (j = 0; j < covmat->col; j++) {
+	    if (covmat->data[i][j] > 0.0f)
+		covmat->data[i][j] = 1.0f / covmat->data[i][j];
+	    else
+		covmat->data[i][j] = 1.0f / magic_covariance;
 	}
-	detvec->data[i] = det;
     }
 
-    return detvec;
+    return;
 }
 
-static double get_gauss_full(long clsidx,
-                             DVECTOR vec,		/* [dim] */
-                             DVECTOR detvec,		/* [clsnum] */
-                             DMATRIX weightmat,	/* [clsnum][1] */
-                             DMATRIX meanvec,		/* [clsnum][dim] */
-                             DMATRIX invcovmat)	/* [clsnum * dim][dim] */
-{
-    double gauss;
-
-    if (detvec->data[clsidx] <= 0.0) {
-	cst_errmsg("#error: det <= 0.0\n");
-        cst_error();
-    }
-
-    gauss = weightmat->data[clsidx][0]
-	/ sqrt(pow(2.0 * PI, (double)vec->length) * detvec->data[clsidx])
-	* exp(-1.0 * cal_xmcxmc(clsidx, vec, meanvec, invcovmat) / 2.0);
-    
-    return gauss;
-}
-
-static double cal_xmcxmc(long clsidx,
-                         DVECTOR x,
-                         DMATRIX mm,	/* [num class][dim] */
-                         DMATRIX cm)	/* [num class * dim][dim] */
-{
-    long clsnum, k, l, b, dim;
-    double *vec = NULL;
-    double td, d;
-
-    dim = x->length;
-    clsnum = mm->row;
-    b = clsidx * dim;
-    if (mm->col != dim || cm->col != dim || clsnum * dim != cm->row) {
-	cst_errmsg("Error cal_xmcxmc: different dimension\n");
-        cst_error();
-    }
-
-    /* memory allocation */
-    vec = mlpg_alloc((int)dim, double);
-    for (k = 0; k < dim; k++) vec[k] = x->data[k] - mm->data[clsidx][k];
-    for (k = 0, d = 0.0; k < dim; k++) {
-	for (l = 0, td = 0.0; l < dim; l++) td += vec[l] * cm->data[l + b][k];
-	d += td * vec[k];
-    }
-    /* memory free */
-    mlpg_free(vec); vec = NULL;
-
-    return d;
-}
+/* MODIFIED (CircuitMess 2026): get_gauss_full, cal_xmcxmc and get_gauss_dia
+   removed together with the unused likelihood computation */
 
 #if 0
 /* diagonal covariance */
@@ -811,33 +729,6 @@ static double get_gauss_dia5(double det,
     return gauss;
 }
 #endif
-
-static double get_gauss_dia(long clsidx,
-                            DVECTOR vec,		/* [dim] */
-                            DVECTOR detvec,		/* [clsnum] */
-                            DMATRIX weightmat,		/* [clsnum][1] */
-                            DMATRIX meanmat,		/* [clsnum][dim] */
-                            DMATRIX invcovmat)		/* [clsnum][dim] */
-{
-    double gauss, sb;
-    long k;
-
-    if (detvec->data[clsidx] <= 0.0) {
-	cst_errmsg("#error: det <= 0.0\n");
-        cst_error();
-    }
-
-    for (k = 0, gauss = 0.0; k < vec->length; k++) {
-	sb = vec->data[k] - meanmat->data[clsidx][k];
-	gauss += sb * invcovmat->data[clsidx][k] * sb;
-    }
-
-    gauss = weightmat->data[clsidx][0]
-	/ sqrt(pow(2.0 * PI, (double)vec->length) * detvec->data[clsidx])
-	* exp(-gauss / 2.0);
-
-    return gauss;
-}
 
 static void pst_free(PStreamChol *pst)
 {
@@ -893,37 +784,27 @@ cst_track *mlpg(const cst_track *param_track, cst_cg_db *cg_db)
     for (i=0; i<nframes; i++)
         param->clsidxv->data[i] = i;
 
-    /* initial static feature sequence */
+    /* MODIFIED (CircuitMess 2026): stm is only the output buffer now — the
+       observation sequence it used to hold fed the removed likelihood
+       computation, and mlgparaChol overwrites every element */
     param->stm = xdmalloc(nframes,dim_st);
-    for (i=0; i<nframes; i++)
-    {
-        for (j=0; j<dim_st; j++)
-            param->stm->data[i][j] = param_track->frames[i][(j+1)*2];
-    }
 
-    /* Load cluster means */
-    for (i=0; i<nframes; i++)
-        for (j=0; j<dim_st; j++)
-            param->mean->data[i][j] = param_track->frames[i][(j+1)*2];
-    
     /* GMM parameters diagonal covariance */
     InitPStreamChol(&pst, cg_db->dynwin, cg_db->dynwinsize, dim_st-1, nframes);
     param->pdf = xdmalloc(nframes,dim*2);
     param->cov = xdmalloc(nframes,dim);
     for (i=0; i<nframes; i++)
         for (j=0; j<dim; j++)
-            param->cov->data[i][j] = 
+            param->cov->data[i][j] =
                 param_track->frames[i][(j+1)*2+1] *
                 param_track->frames[i][(j+1)*2+1];
-    param->detvec = xget_detvec_diamat2inv(param->cov);
+    diamat2inv(param->cov);
 
     /* global variance parameters */
     /* TBD get_gv_mlpgpara(param, vmfile, vvfile, dim2, msg_flag); */
 
-    get_dltmat(param->stm, &pst.dw, 1, param->dltm);
-
-    get_like_pdfseq_vit(dim, dim_st, nframes, nframes, param,
-			param_track->frames, XTRUE);
+    get_pdfseq_vit(dim, dim_st, nframes, nframes, param,
+		   param_track->frames, XTRUE);
 
     /* vlike = get_like_gv(dim2, dnum, param); */
 

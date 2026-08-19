@@ -54,6 +54,14 @@
 /*  Integrate as a Voice Conversion module                           */
 /*                                                                   */
 /*-------------------------------------------------------------------*/
+/*                                                                   */
+/*  MODIFIED (CircuitMess 2026): synthesis converted from double to  */
+/*  single precision (mlsa_float_t, see cst_mlsa.h) — the ESP32-S3   */
+/*  FPU is single-precision only, and software-emulated doubles made */
+/*  MLSA synthesis slower than real-time. Voice data tables accessed */
+/*  through vs->h remain double and are narrowed once per frame.     */
+/*                                                                   */
+/*-------------------------------------------------------------------*/
 
 #include "cst_alloc.h"
 #include "cst_string.h"
@@ -97,7 +105,7 @@ cst_wave *mlsa_resynthesis(const cst_track *params,
     double shift;
 
     if (params->num_frames > 1)
-        shift = 1000.0*(params->times[1]-params->times[0]);
+        shift = 1000.0f*(params->times[1]-params->times[0]);
     else
         shift = 5.0;
 
@@ -116,10 +124,10 @@ static cst_wave *synthesis_body(const cst_track *params, /* f0 + mcep */
 {
     long t, pos;
     int framel, i;
-    double f0;
+    mlsa_float_t f0;
     VocoderSetup vs;
     cst_wave *wave = 0;
-    double *mcep;
+    mlsa_float_t *mcep;
     int stream_mark;
     int rc = CST_AUDIO_STREAM_CONT;
     int num_mcep;
@@ -142,13 +150,13 @@ static cst_wave *synthesis_body(const cst_track *params, /* f0 + mcep */
     cst_wave_resize(wave,params->num_frames * framel,1);
     wave->sample_rate = fs; 
 
-    mcep = cst_alloc(double,num_mcep+1);
+    mcep = cst_alloc(mlsa_float_t,num_mcep+1);
 
     for (t = 0, stream_mark = pos = 0; 
          (rc == CST_AUDIO_STREAM_CONT) && (t < params->num_frames);
          t++) 
     {
-        f0 = (double)params->frames[t][0];
+        f0 = (mlsa_float_t)params->frames[t][0];
         for (i=1; i<num_mcep+1; i++)
             mcep[i-1] = params->frames[t][i];
         mcep[i-1] = 0;
@@ -195,7 +203,7 @@ static void init_vocoder(double fs, int framel, int m,
     /* This makes it about 25% faster and sounds basically the same */
     vs->pd   = 4;
 #else
-    vs->pd   = 5;
+    vs->pd   = 4;
 #endif
 
     vs->next =1;
@@ -211,7 +219,7 @@ static void init_vocoder(double fs, int framel, int m,
     vs->pade[20]=0.00003041721;
 
     vs->rate = fs;
-    vs->c = cst_alloc(double,3 * (m + 1) + 3 * (vs->pd + 1) + vs->pd * (m + 2));
+    vs->c = cst_alloc(mlsa_float_t,3 * (m + 1) + 3 * (vs->pd + 1) + vs->pd * (m + 2));
    
     vs->p1 = -1;
     vs->sw = 0;
@@ -226,37 +234,37 @@ static void init_vocoder(double fs, int framel, int m,
     /* for MIXED EXCITATION */
     vs->ME_order = cg_db->ME_order;
     vs->ME_num = cg_db->ME_num;
-    vs->hpulse = cst_alloc(double,vs->ME_order);
-    vs->hnoise = cst_alloc(double,vs->ME_order);
-    vs->xpulsesig = cst_alloc(double,vs->ME_order);
-    vs->xnoisesig = cst_alloc(double,vs->ME_order);
+    vs->hpulse = cst_alloc(mlsa_float_t,vs->ME_order);
+    vs->hnoise = cst_alloc(mlsa_float_t,vs->ME_order);
+    vs->xpulsesig = cst_alloc(mlsa_float_t,vs->ME_order);
+    vs->xnoisesig = cst_alloc(mlsa_float_t,vs->ME_order);
     vs->h = cg_db->me_h;
 
     return;
 }
 
-static double plus_or_minus_one()
+static mlsa_float_t plus_or_minus_one()
 {
     /* Randomly return 1 or -1 */
     /* not sure rand() is portable */
-    if (rand() > RAND_MAX/2.0)
-        return 1.0;
+    if (rand() > RAND_MAX/2)
+        return 1.0f;
     else
-        return -1.0;
+        return -1.0f;
 }
 
-static void vocoder(double p, double *mc, 
+static void vocoder(mlsa_float_t p, mlsa_float_t *mc,
                     const float *str,
                     int m, cst_cg_db *cg_db,
                     VocoderSetup *vs, cst_wave *wav, long *pos)
 {
-    double inc, x, e1, e2;
-    int i, j, k; 
-    double xpulse, xnoise;
-    double fxpulse, fxnoise;
-    float gain=1.0;
+    mlsa_float_t inc, x, e1, e2;
+    int i, j, k;
+    mlsa_float_t xpulse, xnoise;
+    mlsa_float_t fxpulse, fxnoise;
+    float gain=1.0f;
 
-    if (cg_db->gain != 0.0)
+    if (cg_db->gain != 0.0f)
         gain = cg_db->gain;
    
     if (str != NULL)     /* MIXED-EXCITATION */
@@ -264,16 +272,17 @@ static void vocoder(double p, double *mc,
         /* Copy in str's and build hpulse and hnoise for this frame */
         for (i=0; i<vs->ME_order; i++)
         {
-            vs->hpulse[i] = vs->hnoise[i] = 0.0;
+            vs->hpulse[i] = vs->hnoise[i] = 0.0f;
             for (j=0; j<vs->ME_num; j++)
             {
-                vs->hpulse[i] += str[j] * vs->h[j][i];
-                vs->hnoise[i] += (1 - str[j]) * vs->h[j][i];
+                /* voice data tables stay double; narrow once per frame */
+                vs->hpulse[i] += str[j] * (mlsa_float_t)vs->h[j][i];
+                vs->hnoise[i] += (1.0f - str[j]) * (mlsa_float_t)vs->h[j][i];
             }
         }
     }
 
-    if (p != 0.0)
+    if (p != 0.0f)
 	p = vs->rate / p;  /* f0 -> pitch */
    
     if (vs->p1 < 0) {
@@ -288,13 +297,13 @@ static void vocoder(double p, double *mc,
 
 	mc2b(mc, vs->c, m, cg_db->mlsa_alpha);
 
-	if (cg_db->mlsa_beta > 0.0 && m > 1) {
+	if (cg_db->mlsa_beta > 0.0f && m > 1) {
 	    e1 = b2en(vs->c, m, cg_db->mlsa_alpha, vs);
 	    vs->c[1] -= cg_db->mlsa_beta * cg_db->mlsa_alpha * mc[2];
 	    for (k=2;k<=m;k++)
-		vs->c[k] *= (1.0 + cg_db->mlsa_beta);
+		vs->c[k] *= (1.0f + cg_db->mlsa_beta);
 	    e2 = b2en(vs->c, m, cg_db->mlsa_alpha, vs);
-	    vs->c[0] += log(e1/e2)/2;
+	    vs->c[0] += logf(e1/e2)/2.0f;
 	}
 
 	return;
@@ -302,44 +311,44 @@ static void vocoder(double p, double *mc,
 
     mc2b(mc, vs->cc, m, cg_db->mlsa_alpha); 
 
-    if (cg_db->mlsa_beta>0.0 && m > 1) {
+    if (cg_db->mlsa_beta>0.0f && m > 1) {
 	e1 = b2en(vs->cc, m, cg_db->mlsa_alpha, vs);
 	vs->cc[1] -= cg_db->mlsa_beta * cg_db->mlsa_alpha * mc[2];
 	for (k = 2; k <= m; k++)
-	    vs->cc[k] *= (1.0 + cg_db->mlsa_beta);
+	    vs->cc[k] *= (1.0f + cg_db->mlsa_beta);
 	e2 = b2en(vs->cc, m, cg_db->mlsa_alpha, vs);
-	vs->cc[0] += log(e1 / e2) / 2.0;
+	vs->cc[0] += logf(e1 / e2) / 2.0f;
     }
 
     for (k=0; k<=m; k++)
 	vs->cinc[k] = (vs->cc[k] - vs->c[k]) *
-	    (double)vs->iprd / (double)vs->fprd;
+	    (mlsa_float_t)vs->iprd / (mlsa_float_t)vs->fprd;
 
-    if (vs->p1!=0.0 && p!=0.0) {
-	inc = (p - vs->p1) * (double)vs->iprd / (double)vs->fprd;
+    if (vs->p1!=0.0f && p!=0.0f) {
+	inc = (p - vs->p1) * (mlsa_float_t)vs->iprd / (mlsa_float_t)vs->fprd;
     } else {
-	inc = 0.0;
+	inc = 0.0f;
 	vs->pc = p;
-	vs->p1 = 0.0;
+	vs->p1 = 0.0f;
     }
 
     for (j = vs->fprd, i = (vs->iprd + 1) / 2; j--;) {
-	if (vs->p1 == 0.0) {
+	if (vs->p1 == 0.0f) {
 	    if (vs->gauss)
-		x = (double) nrandom(vs);
+		x = nrandom(vs);
 	    else
 		x = plus_or_minus_one();
             if (str != NULL)             /* MIXED EXCITATION */
             {
                 xnoise = x;
-                xpulse = 0.0;
+                xpulse = 0.0f;
             }
 	} else {
-	    if ((vs->pc += 1.0) >= vs->p1) {
-		x = sqrt (vs->p1);
+	    if ((vs->pc += 1.0f) >= vs->p1) {
+		x = sqrtf (vs->p1);
 		vs->pc = vs->pc - vs->p1;
-	    } else 
-                x = 0.0;
+	    } else
+                x = 0.0f;
 
             if (str != NULL)  /* MIXED EXCITATION */
             {
@@ -352,7 +361,7 @@ static void vocoder(double p, double *mc,
         /* The real work -- apply shaping filters to pulse and noise */
         if (str != NULL)
         {
-            fxpulse = fxnoise = 0.0;
+            fxpulse = fxnoise = 0.0f;
             for (k=vs->ME_order-1; k>0; k--)
             {
                 fxpulse += vs->hpulse[k] * vs->xpulsesig[k];
@@ -371,9 +380,9 @@ static void vocoder(double p, double *mc,
 
         if (cg_db->sample_rate == 8000)
             /* 8KHz voices are too quiet: this is probably not general */
-            x *= exp(vs->c[0])*2.0;
+            x *= expf(vs->c[0])*2.0f;
         else
-            x *= exp(vs->c[0])*gain;
+            x *= expf(vs->c[0])*gain;
 
 	x = mlsadf(x, vs->c, m, cg_db->mlsa_alpha, vs->pd, vs->d1, vs);
 
@@ -388,28 +397,28 @@ static void vocoder(double p, double *mc,
     }
    
     vs->p1 = p;
-    memmove(vs->c,vs->cc,sizeof(double)*(m+1));
+    memmove(vs->c,vs->cc,sizeof(mlsa_float_t)*(m+1));
    
     return;
 }
 
-static double mlsadf(double x, double *b, int m, double a, int pd, double *d, VocoderSetup *vs)
+static mlsa_float_t mlsadf(mlsa_float_t x, mlsa_float_t *b, int m, mlsa_float_t a, int pd, mlsa_float_t *d, VocoderSetup *vs)
 {
 
    vs->ppade = &(vs->pade[pd*(pd+1)/2]);
-    
+
    x = mlsadf1 (x, b, m, a, pd, d, vs);
    x = mlsadf2 (x, b, m, a, pd, &d[2*(pd+1)], vs);
 
    return(x);
 }
 
-static double mlsadf1(double x, double *b, int m, double a, int pd, double *d, VocoderSetup *vs)
+static mlsa_float_t mlsadf1(mlsa_float_t x, mlsa_float_t *b, int m, mlsa_float_t a, int pd, mlsa_float_t *d, VocoderSetup *vs)
 {
-   double v, out = 0.0, *pt, aa;
+   mlsa_float_t v, out = 0.0f, *pt, aa;
    int i;
 
-   aa = 1 - a*a;
+   aa = 1.0f - a*a;
    pt = &d[pd+1];
 
    for (i=pd; i>=1; i--) {
@@ -426,9 +435,9 @@ static double mlsadf1(double x, double *b, int m, double a, int pd, double *d, V
    return(out);
 }
 
-static double mlsadf2 (double x, double *b, int m, double a, int pd, double *d, VocoderSetup *vs)
+static mlsa_float_t mlsadf2 (mlsa_float_t x, mlsa_float_t *b, int m, mlsa_float_t a, int pd, mlsa_float_t *d, VocoderSetup *vs)
 {
-  double v, out = 0.0, *pt;
+  mlsa_float_t v, out = 0.0f, *pt;
   int i;
     
    pt = &d[pd * (m+2)];
@@ -448,13 +457,13 @@ static double mlsadf2 (double x, double *b, int m, double a, int pd, double *d, 
    return(out);
 }
 
-static double mlsafir (double x, double *b, int m, double a, double *d)
-{  
-   double y = 0.0;
-   double aa;
+static mlsa_float_t mlsafir (mlsa_float_t x, mlsa_float_t *b, int m, mlsa_float_t a, mlsa_float_t *d)
+{
+   mlsa_float_t y = 0.0f;
+   mlsa_float_t aa;
    int i;
 
-   aa = 1 - a*a;
+   aa = 1.0f - a*a;
 
    d[0] = x;
    d[1] = aa*d[0] + a*d[1];
@@ -469,17 +478,17 @@ static double mlsafir (double x, double *b, int m, double a, double *d)
    return(y);
 }
 
-static double nrandom (VocoderSetup *vs)
+static mlsa_float_t nrandom (VocoderSetup *vs)
 {
    if (vs->sw == 0) {
       vs->sw = 1;
       do {
-         vs->r1 = 2.0 * rnd(&vs->next) - 1.0;
-         vs->r2 = 2.0 * rnd(&vs->next) - 1.0;
+         vs->r1 = 2.0f * rnd(&vs->next) - 1.0f;
+         vs->r2 = 2.0f * rnd(&vs->next) - 1.0f;
          vs->s  = vs->r1 * vs->r1 + vs->r2 * vs->r2;
-      } while (vs->s > 1 || vs->s == 0);
+      } while (vs->s > 1.0f || vs->s == 0.0f);
 
-      vs->s = sqrt (-2 * log(vs->s) / vs->s);
+      vs->s = sqrtf (-2.0f * logf(vs->s) / vs->s);
       
       return(vs->r1*vs->s);
    }
@@ -490,14 +499,14 @@ static double nrandom (VocoderSetup *vs)
    }
 }
 
-static double rnd (unsigned long *next)
+static mlsa_float_t rnd (unsigned long *next)
 {
-   double r;
+   mlsa_float_t r;
 
    *next = *next * 1103515245L + 12345;
    r = (*next / 65536L) % 32768L;
 
-   return(r/RANDMAX); 
+   return(r/RANDMAX);
 }
 
 static unsigned long srnd ( unsigned long seed )
@@ -506,7 +515,7 @@ static unsigned long srnd ( unsigned long seed )
 }
 
 /* mc2b : transform mel-cepstrum to MLSA digital fillter coefficients */
-static void mc2b (double *mc, double *b, int m, double a)
+static void mc2b (mlsa_float_t *mc, mlsa_float_t *b, int m, mlsa_float_t a)
 {
    b[m] = mc[m];
     
@@ -517,16 +526,16 @@ static void mc2b (double *mc, double *b, int m, double a)
 }
 
 
-static double b2en (double *b, int m, double a, VocoderSetup *vs)
+static mlsa_float_t b2en (mlsa_float_t *b, int m, mlsa_float_t a, VocoderSetup *vs)
 {
-   double en;
+   mlsa_float_t en;
    int k;
-   
+
    if (vs->o<m) {
       if (vs->mc != NULL)
           cst_free(vs->mc);
-    
-      vs->mc = cst_alloc(double,(m + 1) + 2 * vs->irleng);
+
+      vs->mc = cst_alloc(mlsa_float_t,(m + 1) + 2 * vs->irleng);
       vs->cep = vs->mc + m+1;
       vs->ir  = vs->cep + vs->irleng;
    }
@@ -534,8 +543,8 @@ static double b2en (double *b, int m, double a, VocoderSetup *vs)
    b2mc(b, vs->mc, m, a);
    freqt(vs->mc, m, vs->cep, vs->irleng-1, -a, vs);
    c2ir(vs->cep, vs->irleng, vs->ir, vs->irleng);
-   en = 0.0;
-   
+   en = 0.0f;
+
    for (k=0;k<vs->irleng;k++)
       en += vs->ir[k] * vs->ir[k];
 
@@ -544,9 +553,9 @@ static double b2en (double *b, int m, double a, VocoderSetup *vs)
 
 
 /* b2bc : transform MLSA digital filter coefficients to mel-cepstrum */
-static void b2mc (double *b, double *mc, int m, double a)
+static void b2mc (mlsa_float_t *b, mlsa_float_t *mc, int m, mlsa_float_t a)
 {
-  double d, o;
+  mlsa_float_t d, o;
         
   d = mc[m] = b[m];
   for (m--; m>=0; m--) {
@@ -559,27 +568,27 @@ static void b2mc (double *b, double *mc, int m, double a)
 }
 
 /* freqt : frequency transformation */
-static void freqt (double *c1, int m1, double *c2, int m2, double a, VocoderSetup *vs)
+static void freqt (mlsa_float_t *c1, int m1, mlsa_float_t *c2, int m2, mlsa_float_t a, VocoderSetup *vs)
 {
    int i, j;
-   double b;
-    
+   mlsa_float_t b;
+
    if (vs->d==NULL) {
       vs->size = m2;
-      vs->d    = cst_alloc(double,vs->size + vs->size + 2);
+      vs->d    = cst_alloc(mlsa_float_t,vs->size + vs->size + 2);
       vs->g    = vs->d+vs->size+1;
    }
 
    if (m2>vs->size) {
        cst_free(vs->d);
       vs->size = m2;
-      vs->d    = cst_alloc(double,vs->size + vs->size + 2);
+      vs->d    = cst_alloc(mlsa_float_t,vs->size + vs->size + 2);
       vs->g    = vs->d+vs->size+1;
    }
-    
-   b = 1-a*a;
+
+   b = 1.0f-a*a;
    for (i=0; i<m2+1; i++)
-      vs->g[i] = 0.0;
+      vs->g[i] = 0.0f;
 
    for (i=-m1; i<=0; i++) {
       if (0 <= m2)
@@ -590,20 +599,20 @@ static void freqt (double *c1, int m1, double *c2, int m2, double a, VocoderSetu
          vs->g[j] = vs->d[j-1]+a*((vs->d[j]=vs->g[j])-vs->g[j-1]);
    }
 
-   memmove(c2,vs->g,sizeof(double)*(m2+1));
+   memmove(c2,vs->g,sizeof(mlsa_float_t)*(m2+1));
    
    return;
 }
 
 /* c2ir : The minimum phase impulse response is evaluated from the minimum phase cepstrum */
-static void c2ir (double *c, int nc, double *h, int leng)
+static void c2ir (mlsa_float_t *c, int nc, mlsa_float_t *h, int leng)
 {
    int n, k, upl;
-   double  d;
+   mlsa_float_t  d;
 
-   h[0] = exp(c[0]);
+   h[0] = expf(c[0]);
    for (n=1; n<leng; n++) {
-      d = 0;
+      d = 0.0f;
       upl = (n>=nc) ? nc-1 : n;
       for (k=1; k<=upl; k++)
          d += k*c[k]*h[n-k];

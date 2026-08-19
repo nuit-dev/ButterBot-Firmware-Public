@@ -21,6 +21,33 @@ Flashing also uploads the data partitions: the SPIFFS filesystem image built fro
 [spiffs](spiffs), the object detection model from [models](models), and the speech
 recognition and face detection / recognition models provided by the managed components.
 
+## Adding a custom voice
+
+The robot talks using [flite](https://github.com/festvox/flite) text-to-speech, vendored
+in [components/flite](components/flite). You can swap the stock voice for any other flite
+voice — both diphone and ClusterGen (CG) voices are supported. The only hard constraint is
+that the voice must be **16 kHz**, since the whole audio chain (I2S output, effects) is
+hardwired to that sample rate.
+
+You can use one of the prebuilt voices from the
+[flite repository](https://github.com/festvox/flite) (see `src/lang/`), or build your own
+with the [FestVox](http://festvox.org/) tools and export it to C sources using flite's
+`flitevox` conversion tools.
+
+To add a voice (for example `cmu_us_xxx`):
+
+1. Copy the voice's generated C sources into `components/flite/src/lang/cmu_us_xxx/` and
+   its `voxdefs.h` into `components/flite/include/lang/cmu_us_xxx/`. No edits needed — the
+   build picks the sources up automatically.
+2. Swap the voice registration in [main/src/Audio/SpeechGen.cpp](main/src/Audio/SpeechGen.cpp)
+   (three lines): the `extern "C"` declarations at the top, and the `register_cmu_us_xxx` /
+   `unregister_cmu_us_xxx` calls in the constructor and destructor.
+3. Build and flash.
+
+Note: CG voices run the MLSA vocoder, which in this port has been converted to
+single-precision floating point (`components/flite/src/cg/cst_mlsa.c`) — the ESP32-S3 FPU
+is single-precision only, and double math would make synthesis slower than real-time.
+
 ## Restoring the stock firmware
 
 To restore the stock firmware, you can download the prebuilt binary on

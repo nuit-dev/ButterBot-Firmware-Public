@@ -52,6 +52,12 @@
 #include "cst_audio.h"
 #include "cst_wave.h"
 
+/* MODIFIED (CircuitMess 2026): synthesis converted from double to
+   single precision (mlsa_float_t) — the ESP32-S3 FPU is single-precision
+   only, and software-emulated doubles made MLSA synthesis slower than
+   real-time. Voice data tables referenced through `h` remain double. */
+typedef float mlsa_float_t;
+
 /* static void waveampcheck(DVECTOR wav, XBOOL msg_flag); */
 
 #define RANDMAX 32767 
@@ -69,37 +75,37 @@ typedef struct _VocoderSetup {
    int pd;
    unsigned long next;
    Boolean gauss;
-   double p1;
-   double pc;
-   double pj;
-   double pade[21];
-   double *ppade;
-   double *c, *cc, *cinc, *d1;
-   double rate;
+   mlsa_float_t p1;
+   mlsa_float_t pc;
+   mlsa_float_t pj;
+   mlsa_float_t pade[21];
+   mlsa_float_t *ppade;
+   mlsa_float_t *c, *cc, *cinc, *d1;
+   mlsa_float_t rate;
    
    int sw;
-   double r1, r2, s;
+   mlsa_float_t r1, r2, s;
    
    int x;
    
    /* for postfiltering */
    int size;
-   double *d; 
-   double *g;
-   double *mc;
-   double *cep;
-   double *ir;
+   mlsa_float_t *d;
+   mlsa_float_t *g;
+   mlsa_float_t *mc;
+   mlsa_float_t *cep;
+   mlsa_float_t *ir;
    int o;
    int irleng;
    
     /* for MIXED EXCITATION */
     int ME_order;
     int ME_num;
-    double *hpulse;
-    double *hnoise;
+    mlsa_float_t *hpulse;
+    mlsa_float_t *hnoise;
 
-    double *xpulsesig;
-    double *xnoisesig;
+    mlsa_float_t *xpulsesig;
+    mlsa_float_t *xnoisesig;
 
     const double * const *h;  
 
@@ -107,26 +113,26 @@ typedef struct _VocoderSetup {
 
 static void init_vocoder(double fs, int framel, int m, 
                          VocoderSetup *vs, cst_cg_db *cg_db);
-static void vocoder(double p, double *mc, 
+static void vocoder(mlsa_float_t p, mlsa_float_t *mc,
                     const float *str,
                     int m, cst_cg_db *cg_db,
                      VocoderSetup *vs, cst_wave *wav, long *pos);
-static double mlsadf(double x, double *b, int m, double a, int pd, double *d,
-		     VocoderSetup *vs);
-static double mlsadf1(double x, double *b, int m, double a, int pd, double *d,
-		      VocoderSetup *vs);
-static double mlsadf2(double x, double *b, int m, double a, int pd, double *d,
-		      VocoderSetup *vs);
-static double mlsafir (double x, double *b, int m, double a, double *d);
-static double nrandom (VocoderSetup *vs);
-static double rnd (unsigned long *next);
+static mlsa_float_t mlsadf(mlsa_float_t x, mlsa_float_t *b, int m, mlsa_float_t a, int pd,
+		     mlsa_float_t *d, VocoderSetup *vs);
+static mlsa_float_t mlsadf1(mlsa_float_t x, mlsa_float_t *b, int m, mlsa_float_t a, int pd,
+		      mlsa_float_t *d, VocoderSetup *vs);
+static mlsa_float_t mlsadf2(mlsa_float_t x, mlsa_float_t *b, int m, mlsa_float_t a, int pd,
+		      mlsa_float_t *d, VocoderSetup *vs);
+static mlsa_float_t mlsafir (mlsa_float_t x, mlsa_float_t *b, int m, mlsa_float_t a, mlsa_float_t *d);
+static mlsa_float_t nrandom (VocoderSetup *vs);
+static mlsa_float_t rnd (unsigned long *next);
 static unsigned long srnd (unsigned long seed);
-static void mc2b (double *mc, double *b, int m, double a);
-static double b2en (double *b, int m, double a, VocoderSetup *vs);
-static void b2mc (double *b, double *mc, int m, double a);
-static void freqt (double *c1, int m1, double *c2, int m2, double a,
+static void mc2b (mlsa_float_t *mc, mlsa_float_t *b, int m, mlsa_float_t a);
+static mlsa_float_t b2en (mlsa_float_t *b, int m, mlsa_float_t a, VocoderSetup *vs);
+static void b2mc (mlsa_float_t *b, mlsa_float_t *mc, int m, mlsa_float_t a);
+static void freqt (mlsa_float_t *c1, int m1, mlsa_float_t *c2, int m2, mlsa_float_t a,
 		   VocoderSetup *vs);
-static void c2ir (double *c, int nc, double *h, int leng);
+static void c2ir (mlsa_float_t *c, int nc, mlsa_float_t *h, int leng);
 
 static void free_vocoder(VocoderSetup *vs);
 

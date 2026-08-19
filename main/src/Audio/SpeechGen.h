@@ -84,6 +84,10 @@ private:
 	std::atomic_bool abort = false;
 	std::atomic_bool synthRunning = false;
 
+	//Latency-to-first-audio measurement (logged at Debug level)
+	uint32_t synthStartMillis = 0;
+	std::atomic_bool awaitingFirstChunk = false;
+
 	void checkAndAbort();
 
 	[[maybe_unused]] static std::string flitePhoneToCMU(const cst_item* seg);

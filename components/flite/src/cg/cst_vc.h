@@ -42,6 +42,12 @@
 #ifndef __CST_VC_H
 #define __CST_VC_H
 
+/* MODIFIED (CircuitMess 2026): vector/matrix data converted from double to
+   single precision (mlpg_float_t) — the ESP32-S3 FPU is single-precision
+   only, and software-emulated doubles made the MLPG pre-pass dominate
+   latency-to-first-audio. */
+typedef float mlpg_float_t;
+
 typedef struct LVECTOR_STRUCT {
     long length;
     long *data;
@@ -50,15 +56,15 @@ typedef struct LVECTOR_STRUCT {
 
 typedef struct DVECTOR_STRUCT {
     long length;
-    double *data;
-    double *imag;
+    mlpg_float_t *data;
+    mlpg_float_t *imag;
 } *DVECTOR;
 
 typedef struct DMATRIX_STRUCT {
     long row;
     long col;
-    double **data;
-    double **imag;
+    mlpg_float_t **data;
+    mlpg_float_t **imag;
 } *DMATRIX;
 
 #define XBOOL int
@@ -73,21 +79,21 @@ typedef struct DMATRIX_STRUCT {
 
 #define xdvnull() xdvalloc(0)
 
-#define xdvnums(length, value) xdvinit((double)(value), 0.0, (double)(length))
-#define xdvzeros(length) xdvnums(length, 0.0)
+#define xdvnums(length, value) xdvinit((mlpg_float_t)(value), 0.0f, (mlpg_float_t)(length))
+#define xdvzeros(length) xdvnums(length, 0.0f)
 
 LVECTOR xlvalloc(long length);
 void xlvfree(LVECTOR x);
 DVECTOR xdvalloc(long length);
 DVECTOR xdvcut(DVECTOR x, long offset, long length);
 void xdvfree(DVECTOR vector);
-double dvmax(DVECTOR x, long *index);
-double dvmin(DVECTOR x, long *index);
+mlpg_float_t dvmax(DVECTOR x, long *index);
+mlpg_float_t dvmin(DVECTOR x, long *index);
 DMATRIX xdmalloc(long row, long col);
 void xdmfree(DMATRIX matrix);
-DVECTOR xdvinit(double j, double incr, double n);
+DVECTOR xdvinit(mlpg_float_t j, mlpg_float_t incr, mlpg_float_t n);
 
-double dvsum(DVECTOR x);
+mlpg_float_t dvsum(DVECTOR x);
 
 #define RANDMAX 32767 
 #define   B0         0x00000001

@@ -45,6 +45,10 @@
 /*********************************************************************/
 /*                                                                   */
 /*  vector (etc) code common to mlpg and mlsa                        */
+/*                                                                   */
+/*  MODIFIED (CircuitMess 2026): converted from double to single     */
+/*  precision (mlpg_float_t, see cst_vc.h) — the ESP32-S3 FPU is     */
+/*  single-precision only.                                           */
 /*-------------------------------------------------------------------*/
 
 #include "cst_alloc.h"
@@ -88,7 +92,7 @@ DVECTOR xdvalloc(long length)
 
     length = MAX(length, 0);
     x = cst_alloc(struct DVECTOR_STRUCT,1);
-    x->data = cst_alloc(double,MAX(length, 1));
+    x->data = cst_alloc(mlpg_float_t,MAX(length, 1));
     x->imag = NULL;
     x->length = length;
 
@@ -115,7 +119,7 @@ void dvialloc(DVECTOR x)
     if (x->imag != NULL) {
 	cst_free(x->imag);
     }
-    x->imag = cst_alloc(double,x->length);
+    x->imag = cst_alloc(mlpg_float_t,x->length);
 
     return;
 }
@@ -155,9 +159,9 @@ DMATRIX xdmalloc(long row, long col)
     int i;
 
     matrix = cst_alloc(struct DMATRIX_STRUCT,1);
-    matrix->data = cst_alloc(double *,row);
+    matrix->data = cst_alloc(mlpg_float_t *,row);
     for (i=0; i<row; i++)
-        matrix->data[i] = cst_alloc(double,col);
+        matrix->data[i] = cst_alloc(mlpg_float_t,col);
     matrix->imag = NULL;
     matrix->row = row;
     matrix->col = col;
@@ -186,17 +190,17 @@ void xdmfree(DMATRIX matrix)
     return;
 }
 
-DVECTOR xdvinit(double j, double incr, double n)
+DVECTOR xdvinit(mlpg_float_t j, mlpg_float_t incr, mlpg_float_t n)
 {
     long k;
     long num;
     DVECTOR x;
 
-    if ((incr > 0.0 && j > n) || (incr < 0.0 && j < n)) {
+    if ((incr > 0.0f && j > n) || (incr < 0.0f && j < n)) {
 	x = xdvnull();
 	return x;
     }
-    if (incr == 0.0) {
+    if (incr == 0.0f) {
 	num = (long)n;
 	if (num <= 0) {
 	    x = xdvnull();
@@ -218,11 +222,11 @@ DVECTOR xdvinit(double j, double incr, double n)
 }
 
 /* from voperate.cc */
-double dvmax(DVECTOR x, long *index)
+mlpg_float_t dvmax(DVECTOR x, long *index)
 {
     long k;
     long ind;
-    double max;
+    mlpg_float_t max;
 
     ind = 0;
     max = x->data[ind];
@@ -240,11 +244,11 @@ double dvmax(DVECTOR x, long *index)
     return max;
 }
 
-double dvmin(DVECTOR x, long *index)
+mlpg_float_t dvmin(DVECTOR x, long *index)
 {
     long k;
     long ind;
-    double min;
+    mlpg_float_t min;
 
     ind = 0;
     min = x->data[ind];
@@ -262,12 +266,12 @@ double dvmin(DVECTOR x, long *index)
     return min;
 }
 
-double dvsum(DVECTOR x)
+mlpg_float_t dvsum(DVECTOR x)
 {
     long k;
-    double sum;
+    mlpg_float_t sum;
 
-    for (k = 0, sum = 0.0; k < x->length; k++) {
+    for (k = 0, sum = 0.0f; k < x->length; k++) {
 	sum += x->data[k];
     }
 
