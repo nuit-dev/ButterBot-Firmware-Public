@@ -40,6 +40,8 @@
 #include "Routines/ForgetFaceRoutine.h"
 #include "Routines/PowerOffRoutine.h"
 #include "Routines/DanceRoutine.h"
+#include "Routines/OverklokingRoutine.h"
+#include "Routines/QuoteRoutine.h"
 
 namespace {
 	struct ScenarioRoutineMapping {
@@ -98,6 +100,11 @@ namespace {
 		{ { BB::Action::Scenario::FaceDetect, FaceScenarioData{ FaceScenarioData::Phase::Remember } }, &makeRoutine<RememberFaceRoutine> },
 		{ { BB::Action::Scenario::FaceDetectForget, FaceScenarioData{ FaceScenarioData::Phase::Forget } }, &makeRoutine<ForgetFaceRoutine> },
 		{ { BB::Action::Scenario::Dance, {} }, &makeRoutine<DanceRoutine> },
+		// Custom (NUIT)
+		{ { BB::Action::Scenario::OverklokingDrive, {} }, &makeRoutine<OverklokingRoutine> },
+		{ { BB::Action::Scenario::OverklokingQuote, {} }, &makeRoutine<OverklokingQuoteRoutine> },
+		{ { BB::Action::Scenario::BenderQuote, {} }, &makeRoutine<BenderQuoteRoutine> },
+		{ { BB::Action::Scenario::UltronQuote, {} }, &makeRoutine<UltronQuoteRoutine> },
 	};
 }
 
