@@ -1,4 +1,4 @@
-# ButterBot controller firmware – NUIT OVERKLOKING mod
+# ButterBot controller firmware – nju aj ti OVERKLOKING mod
 
 Fork of the [CircuitMess ButterBot controller](https://github.com/CircuitMess/ButterBotCtrl-Firmware-Public) firmware by **NUIT d.o.o.** ([nuit.hr](https://nuit.hr)).
 ⚠️ Use together with the [robot mod](https://github.com/nuit-dev/ButterBot-Firmware-Public) – flash both.
