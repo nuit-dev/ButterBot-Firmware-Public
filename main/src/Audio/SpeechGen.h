@@ -6,6 +6,7 @@
 #include "flite.h"
 #include "freertos/ringbuf.h"
 #include "Thread/Threaded.h"
+#include "VoicePreset.h"
 
 /**
  * Flite thread, koji vrti TTS
@@ -85,6 +86,26 @@ private:
 	std::atomic_bool synthRunning = false;
 
 	void checkAndAbort();
+
+	// Custom (NUIT): voice presets (Voice::current()), flite features of cmu_us_kal16 (stock: mean 95 Hz, stddev 11, stretch 1.1).
+	// SpeechAudioGen may slow the audio down afterwards (Vader, HAL), which lowers pitch and speed once more.
+	struct PresetParams {
+		float f0Mean;    // int_f0_target_mean, Hz
+		float f0Stddev;  // int_f0_target_stddev, 0 = monotone
+		float stretch;   // duration_stretch, >1 = slower
+	};
+	static constexpr PresetParams NormalParams = { 95.0f, 11.0f, 1.1f };
+	static constexpr PresetParams HawkingParams = { 120.0f, 10.0f, 1.2f }; // DECtalk "Perfect Paul": ~120 Hz, normal intonation range; ~150 wpm like Hawking's delivery
+	static constexpr PresetParams VaderParams = { 72.0f, 4.0f, 1.14f }; // x1.25 resample: ~58 Hz, stretch ~1.43
+	static constexpr PresetParams HalParams = { 96.0f, 6.0f, 1.25f };   // x1.1 resample: ~87 Hz, stretch ~1.38, calm, soft intonation
+
+	// Voice::dying (DAISY): at 1 pitch is DyingPitch x lower, stretch DyingStretch x longer, intonation gone
+	static constexpr float DyingPitch = 0.3f;
+	static constexpr float DyingStretch = 0.6f;
+
+	VoicePreset appliedPreset = VoicePreset::Normal; // flite thread only
+	float appliedDying = 0.0f;
+	void applyPreset();
 
 	[[maybe_unused]] static std::string flitePhoneToCMU(const cst_item* seg);
 	static std::string CMUToFlitePhone(const std::string& cmu);

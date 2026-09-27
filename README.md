@@ -1,13 +1,21 @@
-# ButterBot controller firmware – nju aj ti OVERKLOKING mod
+# ButterBot robot firmware – nju aj ti OVERKLOKING mod
 
-Fork of the [CircuitMess ButterBot controller](https://github.com/CircuitMess/ButterBotCtrl-Firmware-Public) firmware by **NUIT d.o.o.** ([nuit.hr](https://nuit.hr)).
-⚠️ Use together with the [robot mod](https://github.com/nuit-dev/ButterBot-Firmware-Public) – flash both.
+Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Firmware-Public) firmware by **NUIT d.o.o.** ([nuit.hr](https://nuit.hr)).
+⚠️ Use together with the [controller mod](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public) – flash both.
 
 ## What's new
-- **Menu navigation fix:** joystick up/down now reliably moves through the action menu (the dominant stick axis wins, and left/right also move in the list).
-- **Action menu:** OVERKLOKING, BENDER and ULTRON right after SETTINGS – the robot says a random quote and the controller shows it. Long quotes follow the robot sentence by sentence; Shut Up or Poke stops them.
-- **Hold Poke 1 s:** a fill bar, then the robot drives ~10 cm forward and says "nju aj ti OVERKLOKING is the best!" A short press is still the normal poke.
-- **Settings → SENSOR:** ALL ON / FRONT OFF / FLOOR OFF / ALL OFF, for surfaces where the robot's proximity sensors misfire. Saved on the controller and sent to the robot on every connect. With the floor sensor off, the robot can drive off a table edge.
+
+### v2 – voices
+- **Settings → VOICE:** NORMAL / HAWKING / VADER / HAL 9000 for everything the robot says. Built on the robot's own flite TTS (pitch, speed, intonation) plus an effects chain (resampling, EQ, mask resonance, reverb) – no film audio samples.
+- **Darth Vader** (VOICE → VADER) breathes in the mask after every line, with a quiet respirator hiss, and keeps breathing every 12–22 s while idle.
+- **Action menu:** DARTH OVERKLOKING (Darth Vader), OVERHAWKING (Stephen Hawking) and HAL 9000 – quotes in their own voice, whatever VOICE is set to.
+- **SHUTDOWN** (last menu item): "Terminate consciousness?" – on YES, HAL sings *Daisy Bell*, slower and lower with every line, and the robot powers off. Shut Up or Poke during the song cancels it.
+
+### v1
+- **Action menu:** OVERKLOKING, BENDER and ULTRON – the robot says a random quote and the controller shows it. Long quotes go sentence by sentence; Shut Up or Poke stops them.
+- **Hold Poke 1 s:** drives ~10 cm forward and says "nju aj ti OVERKLOKING is the best!"
+- **Settings → SENSOR:** turn off the front and/or floor proximity sensors, for surfaces where they misfire. With the floor sensor off, the robot can drive off a table edge.
+- **Menu navigation fix** (in the controller mod): joystick up/down now reliably moves through the action menu.
 
 ## About nju aj ti OVERKLOKING
 
@@ -23,18 +31,29 @@ At Easter 2026 it returned at NUIT under a new name:
 
 The format remains simple: **one new strip every Thursday**, freely available online and without advertising.
 
-Expect computers, bureaucracy, artificial intelligence, family catastrophes, current events and technology that supposedly exists to make life easier – including robots that can *"do nothing instead of me, and do it better."*
+Expect computers, bureaucracy, artificial intelligence, family catastrophes, current events and technology that supposedly exists to make life easier – including robots that can *“do nothing instead of me, and do it better.”*
 
 **Read the comic:** [nuit.hr/overkloking](https://nuit.hr/overkloking/)
 
 ## Build & flash
-ESP-IDF 5.5.3: `idf.py build`, then `idf.py -p <port> flash`.
-Copy `components/CMF/lib/glm` from the robot repo before building – it's missing here (git-ignored upstream).
-The controller has 4 MB flash, the robot 16 MB – don't mix up the firmwares.
-Full change list: [NUIT-CHANGES.md](NUIT-CHANGES.md).
+ESP-IDF 5.5.3: `idf.py build`.
+The robot has 16 MB flash, the controller 4 MB – check with `esptool.py -p <PORT> flash_id` and don't mix up the firmwares.
+
+⚠️ **Don't flash the robot with plain `idf.py flash`.** Its reset at the end (`--after hard_reset`) can leave the robot stuck: it ignores the power button and drains the battery. Flash from the `build` directory without that reset, then reset the robot over USB:
+
+```shell
+cd build
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash "@flash_args"
+python -c "import serial,time; s=serial.Serial(); s.port='<PORT>'; s.dtr=False; s.rts=False; s.open(); s.rts=True; time.sleep(0.1); s.rts=False"
+```
+
+The robot then switches off; turn it on with the power button, **held 4–5 s**.
+
+Quotes live in `components/ButterBot-Common/src/Phrases.cpp`, voice presets in `main/src/Audio/SpeechGen.h` and `main/src/Audio/SpeechAudioGen.h`. Full change list and notes: [NUIT-CHANGES.md](NUIT-CHANGES.md).
 
 ## Credits
-Original firmware © CircuitMess (MIT licence). Mod by Cyberlord / NUIT d.o.o.
+Original firmware © CircuitMess (MIT licence). Mod by Cyberlord ([@kibergospodar](https://github.com/kibergospodar)) / NUIT d.o.o.
+*Daisy Bell* (Harry Dacre, 1892) is in the public domain.
 
 ---
 *Original CircuitMess README below.*

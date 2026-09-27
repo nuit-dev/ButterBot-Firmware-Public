@@ -105,6 +105,10 @@ namespace {
 		{ { BB::Action::Scenario::OverklokingQuote, {} }, &makeRoutine<OverklokingQuoteRoutine> },
 		{ { BB::Action::Scenario::BenderQuote, {} }, &makeRoutine<BenderQuoteRoutine> },
 		{ { BB::Action::Scenario::UltronQuote, {} }, &makeRoutine<UltronQuoteRoutine> },
+		{ { BB::Action::Scenario::DarthQuote, {} }, &makeRoutine<DarthQuoteRoutine> },
+		{ { BB::Action::Scenario::HawkingQuote, {} }, &makeRoutine<HawkingQuoteRoutine> },
+		{ { BB::Action::Scenario::HalQuote, {} }, &makeRoutine<HalQuoteRoutine> },
+		{ { BB::Action::Scenario::DaisySong, {} }, &makeRoutine<DaisySongRoutine> },
 	};
 }
 

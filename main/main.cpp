@@ -409,6 +409,11 @@ private:
 			case Ctrl::SensorsFrontOff: setSensors(false, true); return;
 			case Ctrl::SensorsFloorOff: setSensors(true, false); return;
 			case Ctrl::SensorsAllOff:   setSensors(false, false); return;
+			// Custom (NUIT): TTS voice preset from the controller's Settings screen
+			case Ctrl::VoiceNormal:  setVoice(VoicePreset::Normal); return;
+			case Ctrl::VoiceHawking: setVoice(VoicePreset::Hawking); return;
+			case Ctrl::VoiceVader:   setVoice(VoicePreset::Vader); return;
+			case Ctrl::VoiceHal:     setVoice(VoicePreset::Hal); return;
 			default: break;
 		}
 
@@ -423,6 +428,10 @@ private:
 		if(BaseBoard* baseBoard = getService<BaseBoard>()){
 			baseBoard->setProximityEnabled(front, floor);
 		}
+	}
+
+	void setVoice(VoicePreset preset){
+		Voice::user = preset; // used from the next utterance on
 	}
 
 	void toggleMute(){

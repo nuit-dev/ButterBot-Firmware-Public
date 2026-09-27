@@ -7,7 +7,8 @@ typedef ShutdownData::ShutdownReason ShutdownReason;
 
 class ShutdownService {
 public:
-	static void Shutdown(ShutdownReason reason);
+	// Custom (NUIT): speak = false skips the "turning off" line (SHUTDOWN menu item, after Daisy)
+	static void Shutdown(ShutdownReason reason, bool speak = true);
 
 	static void PowerOff();
 };

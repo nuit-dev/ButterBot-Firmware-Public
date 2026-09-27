@@ -106,6 +106,25 @@ void SpeechGen::cancel(){
 	checkAndAbort();
 }
 
+void SpeechGen::applyPreset(){
+	const VoicePreset p = Voice::current();
+	const float d = Voice::dying.load();
+	if(p == appliedPreset && d == appliedDying) return;
+
+	const PresetParams* params = &NormalParams;
+	switch(p){
+		case VoicePreset::Hawking: params = &HawkingParams; break;
+		case VoicePreset::Vader: params = &VaderParams; break;
+		case VoicePreset::Hal: params = &HalParams; break;
+		default: break;
+	}
+	feat_set_float(voice->features, "int_f0_target_mean", params->f0Mean * (1.0f - DyingPitch * d));
+	feat_set_float(voice->features, "int_f0_target_stddev", params->f0Stddev * (1.0f - d));
+	feat_set_float(voice->features, "duration_stretch", params->stretch * (1.0f + DyingStretch * d));
+	appliedPreset = p;
+	appliedDying = d;
+}
+
 void SpeechGen::fliteThreadFunc(){
 	xSemaphoreTake(startSem, portMAX_DELAY);
 
@@ -114,6 +133,8 @@ void SpeechGen::fliteThreadFunc(){
 		xSemaphoreGive(endSem);
 		return;
 	}
+
+	applyPreset();
 
 	CMF_LOG(SpeechGen, LogLevel::Debug, "flite start synth");
 

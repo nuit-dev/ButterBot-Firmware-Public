@@ -23,6 +23,9 @@
 #include "Routines/EventRoutines/GasConfiguredEventRoutine.h"
 #include "Routines/EventRoutines/SummonEventRoutine.h"
 #include "Routines/WanderRoutine.h"
+#include "Audio/SpeechAudioGen.h"
+#include "Audio/VoicePreset.h"
+#include <Services/Audio/Audio.h>
 
 DEFINE_LOG(IdleState)
 
@@ -50,6 +53,7 @@ const std::array<EventRoutineFactory, static_cast<uint8_t>(EventBag::EventType::
 
 IdleState::IdleState(BBStateMachine* sm) : State(sm){
 	nextRandomRoutineTime = millis() + MinRandomDelay;
+	scheduleBreath();
 
 	const Application* app = ApplicationStatics::getApplication();
 	eventBag = app->getService<EventBag>();
@@ -138,6 +142,31 @@ void IdleState::tick(float deltaTime){
 			endActiveRoutine();
 		}
 	}
+
+	if(sm->getActiveRoutine() == nullptr && !eventPending && !buttonHeld){
+		maybeBreathe();
+	}
+}
+
+void IdleState::scheduleBreath(){
+	nextBreathTime = millis() + BreathMinMs + rand() % (BreathMaxMs - BreathMinMs);
+}
+
+void IdleState::maybeBreathe(){
+	if(Voice::user != VoicePreset::Vader || millis() < nextBreathTime){
+		return;
+	}
+
+	Audio* audio = ApplicationStatics::getApplication()->getService<Audio>();
+	if(audio == nullptr || !ServiceLocator::SpeechAudioGenInstance){
+		return;
+	}
+
+	// Never talk over anything; any new sound interrupts the breath (Audio::play stops the current one)
+	if(!audio->isPlaying()){
+		audio->play(ServiceLocator::SpeechAudioGenInstance.get(), std::make_unique<BreathOnlySource>());
+	}
+	scheduleBreath();
 }
 
 bool IdleState::shouldYieldToEvent(bool eventPending) const{
@@ -274,11 +303,16 @@ int64_t IdleState::getDynamicTickInterval() const{
 		}
 	}
 
-	if(millis() >= nextRandomRoutineTime){
+	uint64_t nextTime = nextRandomRoutineTime;
+	if(Voice::user == VoicePreset::Vader && nextBreathTime < nextTime){
+		nextTime = nextBreathTime;
+	}
+
+	if(millis() >= nextTime){
 		return 0;
 	}
 
-	return nextRandomRoutineTime - millis();
+	return nextTime - millis();
 }
 
 void IdleState::onCommand(Ctrl::Command cmd){

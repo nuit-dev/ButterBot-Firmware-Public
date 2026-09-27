@@ -9,7 +9,9 @@
 #include "Audio/SpeechAudioGen.h"
 #include "Audio/SpeechAudioSource.h"
 #include "Audio/SpeechGen.h"
+#include "Audio/VoicePreset.h"
 #include "Services/Com.h"
+#include "Services/ShutdownService.h"
 #include "States/BBStateMachine.h"
 
 static constexpr const char* TAG = "QuoteRoutine";
@@ -18,6 +20,10 @@ QuoteRoutine::QuoteRoutine(BBStateMachine* sm, QuoteData::Category category, BB:
 		Routine(sm), category(category), scenario(scenario){}
 
 QuoteRoutine::~QuoteRoutine(){
+	if(voiceOverridden){
+		Voice::clearOverride();
+	}
+
 	// Routine ended early (Shut Up, new scenario...) - don't leave speech running
 	if(aborted){
 		if(Audio* audio = ApplicationStatics::getApplication()->getService<Audio>()){
@@ -49,6 +55,14 @@ Routine::TickingState QuoteRoutine::tick(float deltaTime){
 		split = text.size() > QuoteText::SplitThreshold;
 		parts = split ? QuoteText::splitSentences(text) : std::vector<std::string>{ text };
 
+		switch(category){
+			case QuoteData::Category::Darth: Voice::setOverride(VoicePreset::Vader); voiceOverridden = true; break;
+			case QuoteData::Category::Hawking: Voice::setOverride(VoicePreset::Hawking); voiceOverridden = true; break;
+			case QuoteData::Category::Hal:
+			case QuoteData::Category::Daisy: Voice::setOverride(VoicePreset::Hal); voiceOverridden = true; break;
+			default: break;
+		}
+
 		sm->bindRoutine(com->OnCommand, this, &QuoteRoutine::onCommand);
 		return playPart(0) ? TickingState::Continue : TickingState::Done;
 	}
@@ -63,6 +77,10 @@ Routine::TickingState QuoteRoutine::tick(float deltaTime){
 	}
 
 	if(nextPart >= parts.size()){
+		// SHUTDOWN menu item: HAL has finished singing, the robot powers off (Shut Up / Poke above cancels it)
+		if(category == QuoteData::Category::Daisy){
+			ShutdownService::Shutdown(ShutdownReason::Command, false);
+		}
 		return TickingState::Done;
 	}
 
@@ -75,6 +93,11 @@ bool QuoteRoutine::playPart(size_t index){
 	Com* com = app->getService<Com>();
 	if(index >= parts.size()){
 		return false;
+	}
+
+	// DAISY: every line a bit slower and lower, the last one fully "dying"
+	if(category == QuoteData::Category::Daisy){
+		Voice::dying = parts.size() > 1 ? (float)index / (float)(parts.size() - 1) : 0.0f;
 	}
 
 	com->sendData(BB::State::Scenario, scenario, QuoteData{

@@ -19,7 +19,7 @@
 
 DEFINE_LOG(ShutdownService)
 
-void ShutdownService::Shutdown(ShutdownReason reason) {
+void ShutdownService::Shutdown(ShutdownReason reason, bool speak) {
 	const Application* app = ApplicationStatics::getApplication();
 
 	const Phrase phrase = (reason == ShutdownReason::Battery) ? Phrase::BatteryCritical : Phrase::TurningOff;
@@ -43,7 +43,7 @@ void ShutdownService::Shutdown(ShutdownReason reason) {
 	if(audio != nullptr) {
 		audio->stop();
 
-		if(ServiceLocator::SpeechGenInstance && ServiceLocator::SpeechAudioGenInstance) {
+		if(speak && ServiceLocator::SpeechGenInstance && ServiceLocator::SpeechAudioGenInstance) {
 			audio->play(ServiceLocator::SpeechAudioGenInstance.get(), std::make_unique<SpeechAudioSource>(SpeechGen::InputType::Text, Phrases::map(phrase, id)));
 		}
 	}
