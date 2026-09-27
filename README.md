@@ -42,6 +42,34 @@ Expect computers, bureaucracy, artificial intelligence, family catastrophes, cur
 
 **Read the comic:** [nuit.hr/overkloking](https://nuit.hr/overkloking/)
 
+## Flash without building
+Ready-made images are attached to every [release](https://github.com/nuit-dev/ButterBot-Firmware-Public/releases/latest) – no ESP-IDF needed, only Python and esptool: `pip install esptool`.
+`<PORT>` is e.g. `COM6` (Windows), `/dev/cu.usbserial-XXXX` (macOS) or `/dev/ttyUSB0` (Linux). First check that it's the robot – it must say **16MB**:
+
+```shell
+python -m esptool -p <PORT> flash_id
+```
+
+**Option A – one file** (`…-robot-full.bin`): simplest, but erases the robot's saved settings, owner face and IR codes (like a stock restore).
+
+```shell
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v3-robot-full.bin
+```
+
+**Option B – keep settings** (`…-robot-parts.zip`): unzip, then run in the unzipped folder:
+
+```shell
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash "@flash_args"
+```
+
+After either option, reset the robot over USB – it switches off – and turn it on with the power button, **held 4–5 s**:
+
+```shell
+python -c "import serial,time; s=serial.Serial(); s.port='<PORT>'; s.dtr=False; s.rts=False; s.open(); s.rts=True; time.sleep(0.1); s.rts=False"
+```
+
+⚠️ Don't use `--after hard_reset` (esptool's default) for the robot, it can leave it stuck. Flash the [controller](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/latest) too. SHA-256 checksums are in `SHA256SUMS-robot.txt` in the release.
+
 ## Build & flash
 ESP-IDF 5.5.3: `idf.py build`.
 The robot has 16 MB flash, the controller 4 MB – check with `esptool.py -p <PORT> flash_id` and don't mix up the firmwares.
