@@ -23,9 +23,8 @@
 #include "Routines/EventRoutines/GasConfiguredEventRoutine.h"
 #include "Routines/EventRoutines/SummonEventRoutine.h"
 #include "Routines/WanderRoutine.h"
-#include "Audio/SpeechAudioGen.h"
+#include "Routines/BreathRoutine.h"
 #include "Audio/VoicePreset.h"
-#include <Services/Audio/Audio.h>
 
 DEFINE_LOG(IdleState)
 
@@ -34,6 +33,7 @@ const std::vector<IdleState::RandomRoutineDef> IdleState::RandomRoutines = {
 	{ &makeRoutine<ObserveRoutine>, 1 },
 	{ &makeRoutine<WanderRoutine>, 2 },
 	{ &makeRoutine<PersonRoutine>, 1 },
+	{ &makeRoutine<BreathRoutine>, 2 }, // Custom (NUIT): only while VOICE is VADER, see pickRandomRoutine
 };
 
 const std::array<EventRoutineFactory, static_cast<uint8_t>(EventBag::EventType::COUNT)> IdleState::EventRoutines = {
@@ -53,7 +53,6 @@ const std::array<EventRoutineFactory, static_cast<uint8_t>(EventBag::EventType::
 
 IdleState::IdleState(BBStateMachine* sm) : State(sm){
 	nextRandomRoutineTime = millis() + MinRandomDelay;
-	scheduleBreath();
 
 	const Application* app = ApplicationStatics::getApplication();
 	eventBag = app->getService<EventBag>();
@@ -142,31 +141,6 @@ void IdleState::tick(float deltaTime){
 			endActiveRoutine();
 		}
 	}
-
-	if(sm->getActiveRoutine() == nullptr && !eventPending && !buttonHeld){
-		maybeBreathe();
-	}
-}
-
-void IdleState::scheduleBreath(){
-	nextBreathTime = millis() + BreathMinMs + rand() % (BreathMaxMs - BreathMinMs);
-}
-
-void IdleState::maybeBreathe(){
-	if(Voice::user != VoicePreset::Vader || millis() < nextBreathTime){
-		return;
-	}
-
-	Audio* audio = ApplicationStatics::getApplication()->getService<Audio>();
-	if(audio == nullptr || !ServiceLocator::SpeechAudioGenInstance){
-		return;
-	}
-
-	// Never talk over anything; any new sound interrupts the breath (Audio::play stops the current one)
-	if(!audio->isPlaying()){
-		audio->play(ServiceLocator::SpeechAudioGenInstance.get(), std::make_unique<BreathOnlySource>());
-	}
-	scheduleBreath();
 }
 
 bool IdleState::shouldYieldToEvent(bool eventPending) const{
@@ -255,16 +229,21 @@ void IdleState::maybeStartRandomRoutine(){
 }
 
 RoutineFactory IdleState::pickRandomRoutine() const{
+	// Custom (NUIT): the breath is an idle "comment" only with the VADER voice
+	const auto usable = [](const RandomRoutineDef& def){
+		return def.routine != &makeRoutine<BreathRoutine> || Voice::user == VoicePreset::Vader;
+	};
+
 	size_t weightSum = 0;
 	for(const RandomRoutineDef& routineDef : RandomRoutines){
-		weightSum += routineDef.weight;
+		if(usable(routineDef)) weightSum += routineDef.weight;
 	}
 
 	const size_t random = rand() % (weightSum + 1);
 
 	size_t sum = 0;
 	for(const RandomRoutineDef& routineDef : RandomRoutines){
-		if(routineDef.weight == 0){
+		if(routineDef.weight == 0 || !usable(routineDef)){
 			continue;
 		}
 
@@ -303,16 +282,11 @@ int64_t IdleState::getDynamicTickInterval() const{
 		}
 	}
 
-	uint64_t nextTime = nextRandomRoutineTime;
-	if(Voice::user == VoicePreset::Vader && nextBreathTime < nextTime){
-		nextTime = nextBreathTime;
-	}
-
-	if(millis() >= nextTime){
+	if(millis() >= nextRandomRoutineTime){
 		return 0;
 	}
 
-	return nextTime - millis();
+	return nextRandomRoutineTime - millis();
 }
 
 void IdleState::onCommand(Ctrl::Command cmd){

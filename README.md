@@ -7,7 +7,7 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ### v2 – voices
 - **Settings → VOICE:** NORMAL / HAWKING / VADER / HAL 9000 for everything the robot says. Built on the robot's own flite TTS (pitch, speed, intonation) plus an effects chain (resampling, EQ, mask resonance, reverb) – no film audio samples.
-- **Darth Vader** (VOICE → VADER) breathes in the mask after every line, with a quiet respirator hiss, and keeps breathing every 12–22 s while idle.
+- **Darth Vader** (VOICE → VADER) breathes in the mask after every line, with a quiet respirator hiss, and now and then while idle, like the idle comments (sometimes twice in a row).
 - **Action menu:** DARTH OVERKLOKING (Darth Vader), OVERHAWKING (Stephen Hawking) and HAL 9000 – quotes in their own voice, whatever VOICE is set to.
 - **SHUTDOWN** (last menu item): "Terminate consciousness?" – on YES, HAL sings *Daisy Bell*, slower and lower with every line, and the robot powers off. Shut Up or Poke during the song cancels it.
 

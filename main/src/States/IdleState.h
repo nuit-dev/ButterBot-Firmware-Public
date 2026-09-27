@@ -42,13 +42,6 @@ private:
 	// Poke/Motion events handled before this time are stale (queued while a routine ran) and are dropped.
 	uint64_t instantEventCutoff = 0;
 
-	// Custom (NUIT): with the VADER voice the robot breathes in the mask every BreathMin..BreathMax ms while idle
-	static constexpr uint64_t BreathMinMs = 12000;
-	static constexpr uint64_t BreathMaxMs = 22000;
-	uint64_t nextBreathTime = 0;
-	void scheduleBreath();
-	void maybeBreathe();
-
 	static constexpr uint64_t MaximumBtnHoldForTransition = 500;
 	static constexpr uint64_t StaleEventWindow = 100; // ms
 

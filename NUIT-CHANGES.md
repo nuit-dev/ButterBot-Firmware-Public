@@ -23,8 +23,8 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     (lowers pitch and formants), high/low-pass, peaking EQ, soft clip, comb "mask" resonance, reverb.
     VADER also breathes after every line (synthesized noise, +-15 % variation) with a quiet respirator hiss
     under the speech. No film samples.
-  - VADER while idle: `IdleState` plays one mask breath (`BreathOnlySource`) every 12-22 s when nothing else
-    is running. Any new sound interrupts it (`Audio::play` stops the current source).
+  - VADER while idle: `Routines/BreathRoutine` is one of the idle random routines (like Ramble, every 5-20 min),
+    picked only while VOICE is VADER. One mask breath (`BreathOnlySource`), about every 4th time two in a row.
 - New menu scenarios (end of `BB::Action::Scenario`): `DarthQuote`, `HawkingQuote`, `HalQuote`, `DaisySong`,
   routines in `Routines/QuoteRoutine.h`. They always use their own voice (`Voice::setOverride`, cleared in the
   QuoteRoutine destructor, so the VOICE setting is back afterwards).
