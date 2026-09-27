@@ -60,6 +60,8 @@ Routine::TickingState QuoteRoutine::tick(float deltaTime){
 			case QuoteData::Category::Hawking: Voice::setOverride(VoicePreset::Hawking); voiceOverridden = true; break;
 			case QuoteData::Category::Hal:
 			case QuoteData::Category::Daisy: Voice::setOverride(VoicePreset::Hal); voiceOverridden = true; break;
+			case QuoteData::Category::Toaster: Voice::setOverride(VoicePreset::Toaster); voiceOverridden = true; break;
+			case QuoteData::Category::Yoda: Voice::setOverride(VoicePreset::Yoda); voiceOverridden = true; break;
 			default: break;
 		}
 

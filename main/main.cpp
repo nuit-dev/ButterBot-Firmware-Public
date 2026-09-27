@@ -414,6 +414,8 @@ private:
 			case Ctrl::VoiceHawking: setVoice(VoicePreset::Hawking); return;
 			case Ctrl::VoiceVader:   setVoice(VoicePreset::Vader); return;
 			case Ctrl::VoiceHal:     setVoice(VoicePreset::Hal); return;
+			case Ctrl::VoiceToaster: setVoice(VoicePreset::Toaster); return;
+			case Ctrl::VoiceYoda:    setVoice(VoicePreset::Yoda); return;
 			default: break;
 		}
 
@@ -432,6 +434,8 @@ private:
 
 	void setVoice(VoicePreset preset){
 		Voice::user = preset; // used from the next utterance on
+		Phrases::toasterMode = preset == VoicePreset::Toaster;
+		Phrases::yodaMode = preset == VoicePreset::Yoda;
 	}
 
 	void toggleMute(){

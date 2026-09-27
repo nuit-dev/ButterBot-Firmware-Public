@@ -116,6 +116,8 @@ void SpeechGen::applyPreset(){
 		case VoicePreset::Hawking: params = &HawkingParams; break;
 		case VoicePreset::Vader: params = &VaderParams; break;
 		case VoicePreset::Hal: params = &HalParams; break;
+		case VoicePreset::Toaster: params = &ToasterParams; break;
+		case VoicePreset::Yoda: params = &YodaParams; break;
 		default: break;
 	}
 	feat_set_float(voice->features, "int_f0_target_mean", params->f0Mean * (1.0f - DyingPitch * d));

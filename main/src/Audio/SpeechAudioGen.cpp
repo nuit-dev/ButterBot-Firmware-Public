@@ -15,6 +15,8 @@ const SpeechAudioGen::FxParams& SpeechAudioGen::fxFor(VoicePreset preset){
 		case VoicePreset::Hawking: return HawkingFx;
 		case VoicePreset::Vader: return VaderFx;
 		case VoicePreset::Hal: return HalFx;
+		case VoicePreset::Toaster: return ToasterFx;
+		case VoicePreset::Yoda: return YodaFx;
 		default: return NormalFx;
 	}
 }

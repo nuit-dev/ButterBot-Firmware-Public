@@ -98,6 +98,8 @@ private:
 	static constexpr PresetParams HawkingParams = { 120.0f, 10.0f, 1.2f }; // DECtalk "Perfect Paul": ~120 Hz, normal intonation range; ~150 wpm like Hawking's delivery
 	static constexpr PresetParams VaderParams = { 72.0f, 4.0f, 1.14f }; // x1.25 resample: ~58 Hz, stretch ~1.43
 	static constexpr PresetParams HalParams = { 96.0f, 6.0f, 1.25f };   // x1.1 resample: ~87 Hz, stretch ~1.38, calm, soft intonation
+	static constexpr PresetParams ToasterParams = { 170.0f, 22.0f, 0.95f }; // x0.9 resample: ~190 Hz, fast (~0.86), chirpy
+	static constexpr PresetParams YodaParams = { 125.0f, 18.0f, 1.45f };    // x0.88 resample: ~142 Hz, slow (~1.28), lilting
 
 	// Voice::dying (DAISY): at 1 pitch is DyingPitch x lower, stretch DyingStretch x longer, intonation gone
 	static constexpr float DyingPitch = 0.3f;

@@ -5,6 +5,13 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ## What's new
 
+### v3 – more characters
+- **Talkie Toaster** and **Yoda** voices (Settings → VOICE) and menu items TALKIE TOASTER and YODA.
+- **Yoda mode:** with VOICE → YODA the robot turns its sentences around – "I will remember" becomes "Remember, I will" (the controller shows it the same way).
+- **Talkie Toaster mode:** with VOICE → TALKIE TOASTER, idle comments, facts, jokes and poke reactions become toast offers. Battery, error and other functional messages stay normal.
+- **HAL 9000:** more lines, including "I'm sorry, Dave. I'm afraid I can't do that." and the stress pill. Refreshed OVERKLOKING lines.
+- **Bigger app partition** (+192 KB). ⚠️ v3 changes the partition table – when upgrading, flash all partitions once (the command in Build & flash does that). Settings, owner face and IR codes are kept.
+
 ### v2 – voices
 - **Settings → VOICE:** NORMAL / HAWKING / VADER / HAL 9000 for everything the robot says. Built on the robot's own flite TTS (pitch, speed, intonation) plus an effects chain (resampling, EQ, mask resonance, reverb) – no film audio samples.
 - **Darth Vader** (VOICE → VADER) breathes in the mask after every line, with a quiet respirator hiss, and now and then while idle, like the idle comments (sometimes twice in a row).
@@ -48,6 +55,7 @@ python -c "import serial,time; s=serial.Serial(); s.port='<PORT>'; s.dtr=False; 
 ```
 
 The robot then switches off; turn it on with the power button, **held 4–5 s**.
+This writes all partitions – required once when upgrading to v3, because the data partitions moved.
 
 Quotes live in `components/ButterBot-Common/src/Phrases.cpp`, voice presets in `main/src/Audio/SpeechGen.h` and `main/src/Audio/SpeechAudioGen.h`. Full change list and notes: [NUIT-CHANGES.md](NUIT-CHANGES.md).
 

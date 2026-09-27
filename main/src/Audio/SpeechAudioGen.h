@@ -45,6 +45,8 @@ private:
 	static constexpr FxParams HawkingFx = { 1.0f, 200, 5000, 2500, 1.334f, 0, 0, 0, false, 0.03f }; // bright, "tinny" formant-synth colour
 	static constexpr FxParams VaderFx = { 1.25f, 0, 2000, 0, 0, 2.0f, 0.4f, 36, true, 0.15f };
 	static constexpr FxParams HalFx = { 1.1f, 80, 3400, 250, 1.189f, 0, 0, 0, false, 0.05f };      // warm, close mic
+	static constexpr FxParams ToasterFx = { 0.9f, 300, 4000, 1800, 1.189f, 0.2f, 0, 0, false, 0.02f }; // small appliance speaker
+	static constexpr FxParams YodaFx = { 0.88f, 150, 4500, 700, 1.189f, 0.8f, 0, 0, false, 0.05f };   // small body, raspy
 	static const FxParams& fxFor(VoicePreset preset);
 
 	// Voice::dying (DAISY): extra resample slowdown and a duller low-pass at the end of the song

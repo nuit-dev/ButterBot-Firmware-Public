@@ -6,7 +6,7 @@
 
 // Custom (NUIT): TTS voice preset
 enum class VoicePreset : uint8_t {
-	Normal, Hawking, Vader, Hal
+	Normal, Hawking, Vader, Hal, Toaster, Yoda
 };
 
 namespace Voice {
