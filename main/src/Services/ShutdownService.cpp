@@ -68,6 +68,12 @@ void ShutdownService::Shutdown(ShutdownReason reason, bool speak) {
 		audio->stop();
 	}
 
+	// Custom (NUIT): no phrase to wait for - give the controller time to show its shutdown window
+	// before the BLE link drops (it jumps to the pairing screen on disconnect)
+	if(!speak){
+		vTaskDelay(pdMS_TO_TICKS(SilentShutdownDelayMs));
+	}
+
 	if(leds != nullptr){
 		leds->off(MonoLED::Status);
 	}

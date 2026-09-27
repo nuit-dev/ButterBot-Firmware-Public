@@ -11,6 +11,9 @@ public:
 	static void Shutdown(ShutdownReason reason, bool speak = true);
 
 	static void PowerOff();
+
+private:
+	static constexpr uint32_t SilentShutdownDelayMs = 3000; // controller's UninterruptedDisplayMs
 };
 
 #endif //BUTTERBOT_FIRMWARE_SHUTDOWNSERVICE_H

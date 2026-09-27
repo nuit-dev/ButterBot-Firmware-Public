@@ -32,7 +32,8 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   QuoteRoutine destructor, so the VOICE setting is back afterwards).
 - `DaisySong` = controller menu item SHUTDOWN: HAL sings the Daisy chorus from 2001, every line slower and lower
   (`Voice::dying`), then the robot powers off via `ShutdownService::Shutdown(Command, /*speak*/ false)` (no
-  "turning off" line). Shut Up / Poke during the song cancels the shutdown.
+  "turning off" line; it waits 3 s instead so the controller can show its shutdown screen before the BLE link
+  drops). Shut Up / Poke during the song cancels the shutdown.
   Texts in `Phrases.cpp`: `DarthPhrases`, `HawkingPhrases`, `HalPhrases`, `DaisyPhrases` (Daisy Bell, 1892, public domain),
   `ToasterPhrases`, `YodaPhrases`.
 - Voice modes in ButterBot-Common (`Phrases::toasterMode` / `Phrases::yodaMode`, set from the VOICE setting on robot
