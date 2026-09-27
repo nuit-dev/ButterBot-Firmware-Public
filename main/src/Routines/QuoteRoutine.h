@@ -67,6 +67,11 @@ public:
 	explicit YodaQuoteRoutine(BBStateMachine* sm) : QuoteRoutine(sm, QuoteData::Category::Yoda, BB::Action::Scenario::YodaQuote){}
 };
 
+class CroatianQuoteRoutine : public QuoteRoutine {
+public:
+	explicit CroatianQuoteRoutine(BBStateMachine* sm) : QuoteRoutine(sm, QuoteData::Category::Croatian, BB::Action::Scenario::CroatianQuote){}
+};
+
 class OverklokingQuoteRoutine : public QuoteRoutine {
 public:
 	explicit OverklokingQuoteRoutine(BBStateMachine* sm) : QuoteRoutine(sm, QuoteData::Category::Overkloking, BB::Action::Scenario::OverklokingQuote){}

@@ -27,7 +27,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - VADER while idle: `Routines/BreathRoutine` is one of the idle random routines (like Ramble, every 5-20 min),
     picked only while VOICE is VADER. One mask breath (`BreathOnlySource`), about every 4th time two in a row.
 - New menu scenarios (end of `BB::Action::Scenario`): `DarthQuote`, `HawkingQuote`, `HalQuote`, `DaisySong`,
-  `ToasterQuote`, `YodaQuote`,
+  `ToasterQuote`, `YodaQuote`, `CroatianQuote`,
   routines in `Routines/QuoteRoutine.h`. They always use their own voice (`Voice::setOverride`, cleared in the
   QuoteRoutine destructor, so the VOICE setting is back afterwards).
 - `DaisySong` = controller menu item SHUTDOWN: HAL sings the Daisy chorus from 2001, every line slower and lower
@@ -35,14 +35,18 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   "turning off" line; it waits 3 s instead so the controller can show its shutdown screen before the BLE link
   drops). Shut Up / Poke during the song cancels the shutdown.
   Texts in `Phrases.cpp`: `DarthPhrases`, `HawkingPhrases`, `HalPhrases`, `DaisyPhrases` (Daisy Bell, 1892, public domain),
-  `ToasterPhrases`, `YodaPhrases`.
+  `ToasterPhrases`, `YodaPhrases`, `CroatianPhrases`.
+- HRVATSKI (`CroatianQuote`): Croatian lines respelled for the US English TTS ("braat", "zhivvy yeh tee"...), spoken in
+  the VOICE setting's voice; 'shown' is written without diacritics (the controller font has none). flite spells out
+  words it doesn't think are English ("braht", "nahsh"), so check new respellings with a host build of
+  `components/flite` (print the Word / Segment relations of `flite_synth_text`) before flashing.
 - Voice modes in ButterBot-Common (`Phrases::toasterMode` / `Phrases::yodaMode`, set from the VOICE setting on robot
   and controller, so both pick and show the same line):
   - TALKIE TOASTER: Ramble, Fact, Joke, Poke and Profanity lines come from `ToasterPhrases`; functional messages
     (battery, errors, time, dice, modules...) stay as they are.
   - YODA: `map()` / `mapShown()` turn sentences around ("I will remember." -> "Remember, I will."), using the first
     auxiliary verb in the first four words; sentences without one stay as they are.
-  - Character quotes (Darth, Hawking, HAL, Daisy, Toaster, Yoda) are never changed.
+  - Character quotes (Darth, Hawking, HAL, Daisy, Toaster, Yoda, Croatian) are never changed.
 - `components/ButterBot-Common/CMakeLists.txt` builds `Phrases.cpp` with `-Os` (rarely called, saves ~6 KB).
 - Partition table (v3): `factory` app partition 8432k -> 8624k, all data partitions after it moved by 0x30000
   (they are found by name, not by address). ~198 KB of the app partition is free, ~44 KB of flash left at the end.

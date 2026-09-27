@@ -111,6 +111,7 @@ namespace {
 		{ { BB::Action::Scenario::DaisySong, {} }, &makeRoutine<DaisySongRoutine> },
 		{ { BB::Action::Scenario::ToasterQuote, {} }, &makeRoutine<ToasterQuoteRoutine> },
 		{ { BB::Action::Scenario::YodaQuote, {} }, &makeRoutine<YodaQuoteRoutine> },
+		{ { BB::Action::Scenario::CroatianQuote, {} }, &makeRoutine<CroatianQuoteRoutine> },
 	};
 }
 

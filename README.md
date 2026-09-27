@@ -5,6 +5,12 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ## What's new
 
+### v3.2 – HRVATSKI
+- **HRVATSKI** menu item: the robot speaks Croatian – a children's counting rhyme and a few Alan Ford classics – respelled so the US English TTS can say it. It uses the current VOICE, so Darth Vader speaking Croatian is included.
+
+### v3.1
+- The controller now shows its shutdown screen after Daisy, before the robot powers off.
+
 ### v3 – more characters
 - **Talkie Toaster** and **Yoda** voices (Settings → VOICE) and menu items TALKIE TOASTER and YODA.
 - **Yoda mode:** with VOICE → YODA the robot turns its sentences around – "I will remember" becomes "Remember, I will" (the controller shows it the same way).
@@ -56,7 +62,7 @@ python -m esptool -p <PORT> flash_id
 **Option A – one file** (`…-robot-full.bin`): simplest, but erases the robot's saved settings, owner face and IR codes (like a stock restore).
 
 ```shell
-python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v3.1-robot-full.bin
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v3.2-robot-full.bin
 ```
 
 **Option B – keep settings** (`…-robot-parts.zip`): unzip, then run in the unzipped folder:
