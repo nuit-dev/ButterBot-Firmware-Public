@@ -51,6 +51,21 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
 - Partition table (v3): `factory` app partition 8432k -> 8624k, all data partitions after it moved by 0x30000
   (they are found by name, not by address). ~198 KB of the app partition is free, ~44 KB of flash left at the end.
   NVS stays at 0x9000, so settings, owner face and IR codes survive the upgrade.
+- v4 - volume, night mode, clock:
+  - `Ctrl::RobotConfig` (`RobotConfigData`: volume, `NightMode`, night volume) and `Ctrl::SetTime` (`SetTimeData`,
+    local time, 24 h) at the end of `Ctrl::Command`; parsed in `Services/Com` (`OnRobotConfig`, `OnSetTime`).
+  - `Util/RobotConfig.h` holds the values; they are also stored in robot NVS (keys "Volume", "NightMode",
+    "NightVol", outside the settings blob) so the startup greeting already uses them. `main.cpp applyGain()`:
+    muted / night volume / volume (unmute used to jump to 1.0, boot was 0.8). Default volume 80 %, night 40 %.
+  - Night: `updateNight()` on every `Time::OnTimeUpdate` (5 s) with `isNightHour()`; `IdleState` starts no random
+    routines at night (no Ramble, Wander, Observe, Person, breathing).
+  - `Idle::TimeInfo` (`TimeInfoData`) - the RTC time, sent on every connect and after SetTime (controller DATE / TIME).
+    The BM8563 RTC keeps running while the robot is off.
+  - Startup greeting by `dayPeriod()` (`GreetingMorning/Afternoon/Evening/Night`, "Hello" while the clock isn't set)
+    and `Thursday` on Thursdays. `RambleRoutine`: every third comment `RambleMorning/Afternoon/Evening/Night` or,
+    on Thursdays, `Thursday`; `RambleData::kind` (`RambleKind`) tells the controller which list `id` is from.
+  - `CurrentTimeRoutine` speaks 24 h ("fourteen oh five").
+  - Talkie Toaster: 17 lines.
 
 ## Flashing the robot
 

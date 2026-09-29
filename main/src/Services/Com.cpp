@@ -144,6 +144,31 @@ void Com::tick(float deltaTime) noexcept{
 		return;
 	}
 
+	// Custom (NUIT)
+	if(command == Ctrl::RobotConfig){
+		if(buf.size() < sizeof(Ctrl::Command) + sizeof(RobotConfigData)){
+			CMF_LOG(Com, LogLevel::Warning, "Dropping RobotConfig command with truncated payload (%zu bytes)", buf.size());
+			return;
+		}
+
+		RobotConfigData config{};
+		memcpy(&config, buf.data() + sizeof(Ctrl::Command), sizeof(RobotConfigData));
+		OnRobotConfig.broadcast(config);
+		return;
+	}
+
+	if(command == Ctrl::SetTime){
+		if(buf.size() < sizeof(Ctrl::Command) + sizeof(SetTimeData)){
+			CMF_LOG(Com, LogLevel::Warning, "Dropping SetTime command with truncated payload (%zu bytes)", buf.size());
+			return;
+		}
+
+		SetTimeData setTime{};
+		memcpy(&setTime, buf.data() + sizeof(Ctrl::Command), sizeof(SetTimeData));
+		OnSetTime.broadcast(setTime);
+		return;
+	}
+
 	if(command == Ctrl::EnterRC){
 		if(buf.size() < sizeof(Ctrl::Command) + sizeof(RCData)){
 			CMF_LOG(Com, LogLevel::Warning, "Dropping EnterRC command with truncated payload (%zu bytes)", buf.size());

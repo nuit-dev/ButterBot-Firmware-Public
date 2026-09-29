@@ -44,14 +44,9 @@ Routine::TickingState CurrentTimeRoutine::tick(float deltaTime){
     }
 
     const tm now = timeService->getTime();
-    const int hour24 = now.tm_hour;
-    const int minute = now.tm_min;
-    const char* ampm = hour24 >= 12 ? "PM" : "AM";
-    int hour12 = hour24 % 12;
-    if(hour12 == 0) hour12 = 12;
-
+    // Custom (NUIT): 24 h ("fourteen oh five")
     char timeBuf[16];
-    snprintf(timeBuf, sizeof(timeBuf), "%d:%02d %s", hour12, minute, ampm);
+    snprintf(timeBuf, sizeof(timeBuf), "%d:%02d", now.tm_hour, now.tm_min);
 
     const int16_t id = Phrases::get(Phrase::CurrentTimeShow);
     if(id < 0){

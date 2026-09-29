@@ -34,6 +34,13 @@ public:
 	DECLARE_EVENT(OnScenarioEvent, Com, BB::Action::Scenario, ScenarioData);
 	OnScenarioEvent OnScenario{ this };
 
+	// Custom (NUIT)
+	DECLARE_EVENT(OnRobotConfigEvent, Com, RobotConfigData);
+	OnRobotConfigEvent OnRobotConfig{ this };
+
+	DECLARE_EVENT(OnSetTimeEvent, Com, SetTimeData);
+	OnSetTimeEvent OnSetTime{ this };
+
 	void sendData(BB::State state, BB::Action::Idle action);
 	void sendData(BB::State state, BB::Action::Scenario action);
 	void sendData(BB::State state, BB::Action::RC action);

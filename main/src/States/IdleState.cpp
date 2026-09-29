@@ -25,6 +25,7 @@
 #include "Routines/WanderRoutine.h"
 #include "Routines/BreathRoutine.h"
 #include "Audio/VoicePreset.h"
+#include "Util/RobotConfig.h"
 
 DEFINE_LOG(IdleState)
 
@@ -217,6 +218,12 @@ void IdleState::maybeStartRandomRoutine(){
 	}
 
 	if(millis() < nextRandomRoutineTime){
+		return;
+	}
+
+	// Custom (NUIT): night mode - no idle comments, wandering or breathing
+	if(RobotConfig::night){
+		rescheduleRandomRoutine();
 		return;
 	}
 

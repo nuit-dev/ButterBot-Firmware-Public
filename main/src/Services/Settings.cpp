@@ -29,6 +29,18 @@ void Settings::store() const{
 	nvs_commit(handle);
 }
 
+RobotConfigData Settings::getRobotConfig() const{
+	return robotConfig;
+}
+
+void Settings::setRobotConfig(const RobotConfigData& config){
+	robotConfig = config;
+	nvs_set_u8(handle, VolumeKey, config.volume);
+	nvs_set_u8(handle, NightModeKey, config.nightMode);
+	nvs_set_u8(handle, NightVolumeKey, config.nightVolume);
+	nvs_commit(handle);
+}
+
 void Settings::load(){
 	size_t len = sizeof(SettingsStruct);
 	esp_err_t err = nvs_get_blob(handle, BlobName, &settingsStruct, &len);
@@ -36,4 +48,9 @@ void Settings::load(){
 		CMF_LOG(Settings, LogLevel::Warning, "No stored settings found, using defaults: %s", esp_err_to_name(err));
 		settingsStruct = SettingsStruct();
 	}
+
+	uint8_t val = 0;
+	if(nvs_get_u8(handle, VolumeKey, &val) == ESP_OK && val >= 10 && val <= 100) robotConfig.volume = val;
+	if(nvs_get_u8(handle, NightModeKey, &val) == ESP_OK && val <= static_cast<uint8_t>(NightMode::From00)) robotConfig.nightMode = val;
+	if(nvs_get_u8(handle, NightVolumeKey, &val) == ESP_OK && val >= 10 && val <= 100) robotConfig.nightVolume = val;
 }

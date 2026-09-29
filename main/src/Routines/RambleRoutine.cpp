@@ -10,6 +10,8 @@
 #include "Audio/SpeechAudioSource.h"
 #include "Audio/SpeechGen.h"
 #include "Services/Com.h"
+#include "Services/Time.h"
+#include <QuoteText.h>
 
 DEFINE_LOG(RambleRoutine)
 
@@ -23,7 +25,17 @@ Routine::TickingState RambleRoutine::tick(float deltaTime){
         abort();
     }
 
-    const int16_t id = Phrases::get(Phrase::Ramble);
+    // Custom (NUIT): when the clock is set, every third comment fits the time of day, and on Thursday some are
+    // about the new strip. Not in Talkie Toaster mode (all fun lines are toast there).
+    RambleKind kind = RambleKind::Ramble;
+    const Time* timeService = app->getService<Time>();
+    if(timeService != nullptr && timeService->isConfigured() && !Phrases::toasterMode && rand() % 3 == 0){
+        const tm now = timeService->getTime();
+        kind = (now.tm_wday == 4 && rand() % 2 == 0) ? RambleKind::Thursday : dayPeriod(now.tm_hour);
+    }
+    const Phrase phrase = rambleKindPhrase(kind);
+
+    const int16_t id = Phrases::get(phrase);
     if(id < 0){
         CMF_LOG(RambleRoutine, LogLevel::Warning, "Phrases::get returned no phrase id");
         return TickingState::Done;
@@ -31,9 +43,10 @@ Routine::TickingState RambleRoutine::tick(float deltaTime){
 
     RambleData rambleData{};
     rambleData.id = id;
+    rambleData.kind = static_cast<uint8_t>(kind);
     com->sendData(BB::State::Idle, BB::Action::Idle::Ramble, rambleData);
 
-    auto source = std::make_unique<SpeechAudioSource>(SpeechGen::InputType::Text, Phrases::map(Phrase::Ramble, id));
+    auto source = std::make_unique<SpeechAudioSource>(SpeechGen::InputType::Text, Phrases::map(phrase, id));
     audio->play(ServiceLocator::SpeechAudioGenInstance.get(), std::move(source));
     audio->waitEnd(portMAX_DELAY);
 

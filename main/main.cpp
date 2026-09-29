@@ -63,6 +63,8 @@
 #include "Services/GasConfigureService.h"
 #include "FaceDet.h"
 #include "Util/ServiceLocator.h"
+#include "Util/RobotConfig.h"
+#include <QuoteText.h>
 
 DEFINE_LOG(Butterbot)
 
@@ -215,6 +217,14 @@ protected:
 
 		ServiceLocator::SettingsInstance = std::make_unique<Settings>();
 
+		// Custom (NUIT): volume and night mode as last set on the controller
+		{
+			const RobotConfigData config = ServiceLocator::SettingsInstance->getRobotConfig();
+			RobotConfig::volume = config.volume;
+			RobotConfig::nightMode = config.nightMode;
+			RobotConfig::nightVolume = config.nightVolume;
+		}
+
 		ServiceLocator::IRStorageInstance = std::make_unique<IRStorage>();
 
 		OutputGPIO* gpioOutput = registerDriver<OutputGPIO>(HardwareConfiguration::getGpioOutputPins(), gpio);
@@ -268,6 +278,11 @@ protected:
 		BM8563* rtc = registerDevice<BM8563>(i2c_main, HardwareConfiguration::getRTCAddress());
 		Time* timeService = registerService<Time>(rtc, /*internalStack=*/false);
 
+		// Custom (NUIT): night mode follows the clock (Time broadcasts every 5 s)
+		updateNight();
+		applyGain();
+		timeService->OnTimeUpdate.bind(this, &Butterbot::onTimeUpdate);
+
 		auto bt = new Bluetooth();
 		auto gap = new BLE::GAP();
 		auto client = new BLE::Client(gap);
@@ -280,10 +295,21 @@ protected:
 
 		com->OnConnStatus.bind(this, &Butterbot::onConnStatus);
 		com->OnCommand.bind(this, &Butterbot::onCommand);
+		com->OnRobotConfig.bind(this, &Butterbot::onRobotConfig); // Custom (NUIT)
+		com->OnSetTime.bind(this, &Butterbot::onSetTime); // Custom (NUIT)
 
 		server->start();
 
-		speakAndWait(audio, Phrase::Startup);
+		// Custom (NUIT): greeting by the time of day ("Hello" while the clock isn't set), plus the Thursday strip
+		if(timeService->isConfigured()){
+			const tm now = timeService->getTime();
+			speakAndWait(audio, greetingFor(dayPeriod(now.tm_hour)));
+			if(now.tm_wday == 4){
+				speakAndWait(audio, Phrase::Thursday);
+			}
+		}else{
+			speakAndWait(audio, Phrase::Startup);
+		}
 
 		ServiceLocator::SC7A20Instance = std::make_unique<SC7A20>(i2c_main, HardwareConfiguration::getAcceleroAddress());
 		MotionService* motionService = registerService<MotionService>();
@@ -400,6 +426,7 @@ private:
 
 		sendBatteryStatus();
 		sendMuteStatus();
+		sendTimeInfo(); // Custom (NUIT)
 	}
 
 	void onCommand(const Ctrl::Command command){
@@ -438,10 +465,99 @@ private:
 		Phrases::yodaMode = preset == VoicePreset::Yoda;
 	}
 
+	// Custom (NUIT): muted, night volume or volume (was a fixed 1.0 after unmuting, 0.8 at boot)
+	void applyGain(){
+		if(Audio* audio = getService<Audio>()){
+			const uint8_t percent = RobotConfig::night ? RobotConfig::nightVolume.load() : RobotConfig::volume.load();
+			audio->setGain(muted ? 0.f : percent / 100.f);
+		}
+	}
+
+	void updateNight(){
+		const Time* timeService = getService<Time>();
+		const bool night = timeService != nullptr && timeService->isConfigured() &&
+						   isNightHour(static_cast<NightMode>(RobotConfig::nightMode.load()), timeService->getTime().tm_hour);
+		if(RobotConfig::night.exchange(night) != night){
+			applyGain();
+		}
+	}
+
+	void onTimeUpdate(tm){
+		updateNight();
+	}
+
+	void onRobotConfig(const RobotConfigData& data){
+		RobotConfigData config = data;
+		config.volume = std::clamp<uint8_t>(config.volume, 10, 100);
+		config.nightVolume = std::clamp<uint8_t>(config.nightVolume, 10, 100);
+		if(config.nightMode > static_cast<uint8_t>(NightMode::From00)) config.nightMode = 0;
+
+		RobotConfig::volume = config.volume;
+		RobotConfig::nightMode = config.nightMode;
+		RobotConfig::nightVolume = config.nightVolume;
+
+		if(ServiceLocator::SettingsInstance){
+			const RobotConfigData stored = ServiceLocator::SettingsInstance->getRobotConfig();
+			if(stored.volume != config.volume || stored.nightMode != config.nightMode || stored.nightVolume != config.nightVolume){
+				ServiceLocator::SettingsInstance->setRobotConfig(config);
+			}
+		}
+
+		updateNight();
+		applyGain();
+	}
+
+	void onSetTime(const SetTimeData& data){
+		Time* timeService = getService<Time>();
+		if(timeService == nullptr) return;
+		if(data.year < 2024 || data.year > 2099 || data.month < 1 || data.month > 12 || data.day < 1 || data.day > 31 ||
+		   data.hour > 23 || data.minute > 59){
+			return;
+		}
+
+		tm time = {};
+		time.tm_year = data.year - 1900;
+		time.tm_mon = data.month - 1;
+		time.tm_mday = data.day;
+		time.tm_hour = data.hour;
+		time.tm_min = data.minute;
+		time.tm_sec = 0;
+		timeService->setTime(time);
+
+		updateNight();
+		sendTimeInfo();
+	}
+
+	void sendTimeInfo() const{
+		const Time* timeService = getService<Time>();
+		Com* com = getService<Com>();
+		if(timeService == nullptr || com == nullptr) return;
+
+		const tm now = timeService->getTime();
+		com->sendData(BB::State::Idle, BB::Action::Idle::TimeInfo, TimeInfoData{
+			.configured = timeService->isConfigured(),
+			.year = static_cast<uint16_t>(now.tm_year + 1900),
+			.month = static_cast<uint8_t>(now.tm_mon + 1),
+			.day = static_cast<uint8_t>(now.tm_mday),
+			.hour = static_cast<uint8_t>(now.tm_hour),
+			.minute = static_cast<uint8_t>(now.tm_min),
+			.second = static_cast<uint8_t>(now.tm_sec)
+		});
+	}
+
+	static Phrase greetingFor(RambleKind period){
+		switch(period){
+			case RambleKind::Morning: return Phrase::GreetingMorning;
+			case RambleKind::Afternoon: return Phrase::GreetingAfternoon;
+			case RambleKind::Evening: return Phrase::GreetingEvening;
+			default: return Phrase::GreetingNight;
+		}
+	}
+
 	void toggleMute(){
 		if(Audio* audio = getService<Audio>()){
 			muted = !muted;
-			audio->setGain(muted ? 0.f : 1.f);
+			applyGain();
 			sendMuteStatus();
 
 			if(!muted){

@@ -3,6 +3,7 @@
 
 #include <nvs.h>
 #include <BBData.h>
+#include <CtrlData.h>
 
 struct SettingsStruct {
 	using Scale = TempHumScale;
@@ -23,6 +24,10 @@ public:
 	void set(const SettingsStruct& settings);
 	void store() const;
 
+	// Custom (NUIT): kept outside the settings blob so its stored layout doesn't change
+	RobotConfigData getRobotConfig() const;
+	void setRobotConfig(const RobotConfigData& config);
+
 private:
 	SettingsStruct settingsStruct;
 
@@ -31,6 +36,11 @@ private:
 	nvs_handle_t handle{};
 
 	void load();
+
+	RobotConfigData robotConfig{ 80, 0, 40 };
+	static constexpr const char* VolumeKey = "Volume";
+	static constexpr const char* NightModeKey = "NightMode";
+	static constexpr const char* NightVolumeKey = "NightVol";
 };
 
 

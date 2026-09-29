@@ -5,6 +5,14 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ## What's new
 
+### v4 – clock, volume and night mode
+- **Settings → VOLUME / NIGHT MODE / NIGHT VOLUME** (on the controller): robot volume 10–100 %, and night hours (22–07, 23–07 or 00–07) with a quieter voice and no idle comments, wandering or breathing. The robot remembers them, so even its startup greeting uses the right volume. Unmuting now returns to your volume instead of jumping to 100 %.
+- **Clock:** set the robot's date and time from the controller (Settings → DATE / TIME, 24 h) – or from your phone, as before. The robot keeps time while it is off and speaks it in 24 h format.
+- **Greeting by the time of day** at startup (Good morning / afternoon / evening / "Working late?"), and on Thursdays a reminder that a new nju aj ti OVERKLOKING strip is out.
+- Some idle comments now fit the time of day, and on Thursdays they mention the new strip.
+- **Talkie Toaster:** 17 lines, most of them from the series.
+- Flash together with the [controller mod v4](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v4) – the robot and the controller talk a new protocol.
+
 ### v3.2 – HRVATSKI
 - **HRVATSKI** menu item: the robot speaks Croatian – a children's counting rhyme and a few Alan Ford classics – respelled so the US English TTS can say it. It uses the current VOICE, so Darth Vader speaking Croatian is included.
 
@@ -62,7 +70,7 @@ python -m esptool -p <PORT> flash_id
 **Option A – one file** (`…-robot-full.bin`): simplest, but erases the robot's saved settings, owner face and IR codes (like a stock restore).
 
 ```shell
-python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v3.2-robot-full.bin
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v4-robot-full.bin
 ```
 
 **Option B – keep settings** (`…-robot-parts.zip`): unzip, then run in the unzipped folder:
