@@ -182,6 +182,7 @@ void SpeechAudioGen::processFx(int16_t* samples, size_t count){
 			combPos = (combPos + 1) % fx->combDelay;
 			x = y * (1.0f - fx->comb);
 		}
+		x *= fx->gain;
 		if(x > 1.0f) x = 1.0f;
 		else if(x < -1.0f) x = -1.0f;
 		samples[i] = (int16_t)(x * 32767.0f);
