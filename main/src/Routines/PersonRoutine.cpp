@@ -1,4 +1,5 @@
 #include "PersonRoutine.h"
+#include "Util/RobotConfig.h"
 #include "States/BBStateMachine.h"
 #include <Statics/ApplicationStatics.h>
 #include <Core/Application.h>
@@ -92,18 +93,29 @@ Routine::TickingState PersonRoutine::tick(float deltaTime){
 			faceDetActive = true;
 
 			detected = false;
-			scanDeadlineMs = millis() + ScanWindowMs;
+			scanDeadlineMs = millis() + (RobotConfig::roaming ? ScanWindowMs : StationaryScanWindowMs);
 			phase = Phase::Scanning;
 			return TickingState::Continue;
 		}
 
 		case Phase::Scanning: {
 			if(detected){
+				// Custom (NUIT): ROAMING OFF - greet from where it stands, no centering or driving
+				if(!RobotConfig::roaming){
+					greetKnown = detectedKnown;
+					faceDet->stop();
+					greet();
+					return TickingState::Done;
+				}
 				beginApproach();
 				return TickingState::Continue;
 			}
 
 			if(millis() >= scanDeadlineMs){
+				if(!RobotConfig::roaming){
+					CMF_LOG(PersonRoutine, LogLevel::Info, "No face in front, roaming off - not turning");
+					return TickingState::Done;
+				}
 				if(rotationCount >= MaxRotations){
 					CMF_LOG(PersonRoutine, LogLevel::Info, "No face after full rotation");
 					return TickingState::Done;

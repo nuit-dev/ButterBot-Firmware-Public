@@ -223,6 +223,7 @@ protected:
 			RobotConfig::volume = config.volume;
 			RobotConfig::nightMode = config.nightMode;
 			RobotConfig::nightVolume = config.nightVolume;
+			RobotConfig::roaming = config.roaming != 0;
 		}
 
 		ServiceLocator::IRStorageInstance = std::make_unique<IRStorage>();
@@ -491,14 +492,17 @@ private:
 		config.volume = std::clamp<uint8_t>(config.volume, 10, 100);
 		config.nightVolume = std::clamp<uint8_t>(config.nightVolume, 10, 100);
 		if(config.nightMode > static_cast<uint8_t>(NightMode::From00)) config.nightMode = 0;
+		config.roaming = config.roaming != 0;
 
 		RobotConfig::volume = config.volume;
 		RobotConfig::nightMode = config.nightMode;
 		RobotConfig::nightVolume = config.nightVolume;
+		RobotConfig::roaming = config.roaming;
 
 		if(ServiceLocator::SettingsInstance){
 			const RobotConfigData stored = ServiceLocator::SettingsInstance->getRobotConfig();
-			if(stored.volume != config.volume || stored.nightMode != config.nightMode || stored.nightVolume != config.nightVolume){
+			if(stored.volume != config.volume || stored.nightMode != config.nightMode || stored.nightVolume != config.nightVolume ||
+			   stored.roaming != config.roaming){
 				ServiceLocator::SettingsInstance->setRobotConfig(config);
 			}
 		}

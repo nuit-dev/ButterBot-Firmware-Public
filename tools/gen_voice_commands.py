@@ -374,8 +374,8 @@ w('| Forget the owner | ' + '<br>'.join(phrases_for('FaceDetectForget')) + ' |')
 w('')
 w('Look straight at the camera from about 30–60 cm, in good light. To change the owner, forget the old one first.')
 w('')
-w('**On its own:** while idle, when someone comes close in front of it, the robot looks for a face and greets its '
-  'owner or a stranger.')
+w('**On its own:** every now and then, while idle, the robot turns around looking for a face, drives up to it and '
+  'greets its owner or a stranger. With ROAMING off (controller Settings) it stays put and only looks straight ahead.')
 w('')
 if FULL:
     for label, arr in [('Scanning', 'FaceScanStartPhrases'), ('Owner', 'FaceOwnerRecognizedPhrases'),

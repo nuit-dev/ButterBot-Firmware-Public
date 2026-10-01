@@ -7,6 +7,10 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ## What's new
 
+### v4.2 – ROAMING
+- **Settings → ROAMING** (on the controller): OFF keeps the robot in place while idle – no wandering around, and when it looks for a face it only looks straight ahead instead of turning and driving towards you. Handy on a table. Voice commands, Summon and dancing still move it. The robot remembers the setting.
+- Flash together with the [controller mod v4.2](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v4.2). Mixing with v4.1 works too, roaming then simply stays on.
+
 ### v4.1 – talking to ButterBot
 - **[Voice commands](docs/VOICE-COMMANDS.md):** all 237 phrases the robot understands, in one table by what they do, with the key words to say clearly, the follow-up answers (dice, notifications, dancing) and tips for being understood.
 - **[Vision](docs/VISION.md):** the 10 objects its camera recognises, how it decides, and how face recognition (owner or stranger) works.
@@ -81,7 +85,7 @@ python -m esptool -p <PORT> flash_id
 **Option A – one file** (`…-robot-full.bin`): simplest, but erases the robot's saved settings, owner face and IR codes (like a stock restore).
 
 ```shell
-python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v4.1-robot-full.bin
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v4.2-robot-full.bin
 ```
 
 **Option B – keep settings** (`…-robot-parts.zip`): unzip, then run in the unzipped folder:

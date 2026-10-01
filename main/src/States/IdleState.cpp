@@ -236,8 +236,9 @@ void IdleState::maybeStartRandomRoutine(){
 }
 
 RoutineFactory IdleState::pickRandomRoutine() const{
-	// Custom (NUIT): the breath is an idle "comment" only with the VADER voice
+	// Custom (NUIT): the breath is an idle "comment" only with the VADER voice; ROAMING OFF = no wandering
 	const auto usable = [](const RandomRoutineDef& def){
+		if(def.routine == &makeRoutine<WanderRoutine> && !RobotConfig::roaming) return false;
 		return def.routine != &makeRoutine<BreathRoutine> || Voice::user == VoicePreset::Vader;
 	};
 

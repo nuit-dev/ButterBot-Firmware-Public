@@ -1,4 +1,5 @@
 #include "Com.h"
+#include <algorithm>
 
 DEFINE_LOG(Com)
 
@@ -146,13 +147,13 @@ void Com::tick(float deltaTime) noexcept{
 
 	// Custom (NUIT)
 	if(command == Ctrl::RobotConfig){
-		if(buf.size() < sizeof(Ctrl::Command) + sizeof(RobotConfigData)){
+		if(buf.size() < sizeof(Ctrl::Command) + RobotConfigDataV4Size){
 			CMF_LOG(Com, LogLevel::Warning, "Dropping RobotConfig command with truncated payload (%zu bytes)", buf.size());
 			return;
 		}
 
-		RobotConfigData config{};
-		memcpy(&config, buf.data() + sizeof(Ctrl::Command), sizeof(RobotConfigData));
+		RobotConfigData config{}; // a v4 controller sends 3 bytes, roaming stays at its default (on)
+		memcpy(&config, buf.data() + sizeof(Ctrl::Command), std::min(buf.size() - sizeof(Ctrl::Command), sizeof(RobotConfigData)));
 		OnRobotConfig.broadcast(config);
 		return;
 	}

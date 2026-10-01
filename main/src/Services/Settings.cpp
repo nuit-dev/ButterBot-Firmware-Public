@@ -38,6 +38,7 @@ void Settings::setRobotConfig(const RobotConfigData& config){
 	nvs_set_u8(handle, VolumeKey, config.volume);
 	nvs_set_u8(handle, NightModeKey, config.nightMode);
 	nvs_set_u8(handle, NightVolumeKey, config.nightVolume);
+	nvs_set_u8(handle, RoamingKey, config.roaming);
 	nvs_commit(handle);
 }
 
@@ -53,4 +54,5 @@ void Settings::load(){
 	if(nvs_get_u8(handle, VolumeKey, &val) == ESP_OK && val >= 10 && val <= 100) robotConfig.volume = val;
 	if(nvs_get_u8(handle, NightModeKey, &val) == ESP_OK && val <= static_cast<uint8_t>(NightMode::From00)) robotConfig.nightMode = val;
 	if(nvs_get_u8(handle, NightVolumeKey, &val) == ESP_OK && val >= 10 && val <= 100) robotConfig.nightVolume = val;
+	if(nvs_get_u8(handle, RoamingKey, &val) == ESP_OK && val <= 1) robotConfig.roaming = val;
 }

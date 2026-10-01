@@ -37,10 +37,11 @@ private:
 
 	void load();
 
-	RobotConfigData robotConfig{ 80, 0, 40 };
+	RobotConfigData robotConfig{ 80, 0, 40, 1 };
 	static constexpr const char* VolumeKey = "Volume";
 	static constexpr const char* NightModeKey = "NightMode";
 	static constexpr const char* NightVolumeKey = "NightVol";
+	static constexpr const char* RoamingKey = "Roaming";
 };
 
 

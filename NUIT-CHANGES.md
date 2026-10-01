@@ -49,7 +49,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - Character quotes (Darth, Hawking, HAL, Daisy, Toaster, Yoda, Croatian) are never changed.
 - `components/ButterBot-Common/CMakeLists.txt` builds `Phrases.cpp` with `-Os` (rarely called, saves ~6 KB).
 - Partition table (v3): `factory` app partition 8432k -> 8624k, all data partitions after it moved by 0x30000
-  (they are found by name, not by address). ~186 KB of the app partition is free (v4.1), ~44 KB of flash left at the end.
+  (they are found by name, not by address). ~186 KB of the app partition is free (v4.2), ~44 KB of flash left at the end.
   NVS stays at 0x9000, so settings, owner face and IR codes survive the upgrade.
 - v4 - volume, night mode, clock:
   - `Ctrl::RobotConfig` (`RobotConfigData`: volume, `NightMode`, night volume) and `Ctrl::SetTime` (`SetTimeData`,
@@ -81,6 +81,12 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     `SpeechAudioGen.cpp` (flite built natively), measured to the same loudness as the other voices.
   - Respellings (`pronounced` only, `shown` unchanged): "reed" for present-tense read, "Reeding", "izzent",
     "I am" (flite said "im"), "teers", "Shoodent", "lyves". Check new lines with a host flite build first.
+- v4.2 - ROAMING:
+  - `RobotConfigData::roaming` (1 = on) appended to the struct; `Com` accepts the 3-byte v4 payload
+    (`RobotConfigDataV4Size`), roaming then stays on. NVS key "Roaming", `RobotConfig::roaming`.
+  - Off: `IdleState::pickRandomRoutine` skips `WanderRoutine`; `PersonRoutine` looks ahead for
+    `StationaryScanWindowMs` (1.5 s) without rotating, and greets a face where it stands (no centering, no driving).
+    Commands (voice movement, Summon, Dance, OVERKLOKING drive) are not affected.
 
 ## Flashing the robot
 
