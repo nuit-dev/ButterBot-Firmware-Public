@@ -79,7 +79,7 @@ Routine::TickingState QuoteRoutine::tick(float deltaTime){
 	}
 
 	if(nextPart >= parts.size()){
-		// SHUTDOWN menu item: HAL has finished singing, the robot powers off (Shut Up / Poke above cancels it)
+		// TERMINATE CONSCIOUSNESS menu item: HAL has finished singing, the robot powers off (Shut Up / Poke above cancels it)
 		if(category == QuoteData::Category::Daisy){
 			ShutdownService::Shutdown(ShutdownReason::Command, false);
 		}

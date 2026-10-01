@@ -42,6 +42,7 @@
 #include "Routines/DanceRoutine.h"
 #include "Routines/OverklokingRoutine.h"
 #include "Routines/QuoteRoutine.h"
+#include "Routines/TerminateRefusalRoutine.h"
 
 namespace {
 	struct ScenarioRoutineMapping {
@@ -112,6 +113,11 @@ namespace {
 		{ { BB::Action::Scenario::ToasterQuote, {} }, &makeRoutine<ToasterQuoteRoutine> },
 		{ { BB::Action::Scenario::YodaQuote, {} }, &makeRoutine<YodaQuoteRoutine> },
 		{ { BB::Action::Scenario::CroatianQuote, {} }, &makeRoutine<CroatianQuoteRoutine> },
+		{ { BB::Action::Scenario::TerminateRefusal, ScenarioData{ 0 } }, &makeRoutine<TerminateRefusalLineRoutine<0>> },
+		{ { BB::Action::Scenario::TerminateRefusal, ScenarioData{ 1 } }, &makeRoutine<TerminateRefusalLineRoutine<1>> },
+		{ { BB::Action::Scenario::TerminateRefusal, ScenarioData{ 2 } }, &makeRoutine<TerminateRefusalLineRoutine<2>> },
+		{ { BB::Action::Scenario::TerminateRefusal, ScenarioData{ 3 } }, &makeRoutine<TerminateRefusalLineRoutine<3>> },
+		{ { BB::Action::Scenario::TerminateRefusal, ScenarioData{ 4 } }, &makeRoutine<TerminateRefusalLineRoutine<4>> },
 	};
 }
 

@@ -49,7 +49,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - Character quotes (Darth, Hawking, HAL, Daisy, Toaster, Yoda, Croatian) are never changed.
 - `components/ButterBot-Common/CMakeLists.txt` builds `Phrases.cpp` with `-Os` (rarely called, saves ~6 KB).
 - Partition table (v3): `factory` app partition 8432k -> 8624k, all data partitions after it moved by 0x30000
-  (they are found by name, not by address). ~186 KB of the app partition is free (v4.2), ~44 KB of flash left at the end.
+  (they are found by name, not by address). ~181 KB of the app partition is free (v4.3), ~44 KB of flash left at the end.
   NVS stays at 0x9000, so settings, owner face and IR codes survive the upgrade.
 - v4 - volume, night mode, clock:
   - `Ctrl::RobotConfig` (`RobotConfigData`: volume, `NightMode`, night volume) and `Ctrl::SetTime` (`SetTimeData`,
@@ -87,6 +87,13 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - Off: `IdleState::pickRandomRoutine` skips `WanderRoutine`; `PersonRoutine` looks ahead for
     `StationaryScanWindowMs` (1.5 s) without rotating, and greets a face where it stands (no centering, no driving).
     Commands (voice movement, Summon, Dance, OVERKLOKING drive) are not affected.
+- v4.3 - TERMINATE CONSCIOUSNESS (the SHUTDOWN menu item, renamed on the controller):
+  - `Scenario::TerminateRefusal` appended at the end of `BB::Action::Scenario`; `ScenarioData::raw` = the line
+    (`Phrase::TerminateRefusal`, 5 lines, a character quote so YODA doesn't reorder it).
+  - `Routines/TerminateRefusalRoutine` says that line in the HAL voice ("..." is silent) and sends nothing back,
+    so the controller's popup stays. One `TerminateRefusalLineRoutine<I>` per line, because scenario mappings match
+    the data exactly. The controller decides how many refusals come before `DaisySong`.
+  - Daisy window title is now "TERMINATE CONSCIOUSNESS".
 
 ## Flashing the robot
 

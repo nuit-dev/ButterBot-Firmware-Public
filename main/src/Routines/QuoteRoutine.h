@@ -11,7 +11,7 @@
  * Custom (NUIT): says one random quote of a category (OVERKLOKING / BENDER / ULTRON menu items)
  * and shows it on the controller. Long quotes are spoken sentence by sentence, the controller
  * follows along, and Shut Up stops the rest. Character categories (Darth, Hawking, HAL, Daisy, Toaster, Yoda)
- * always use their own voice, regardless of the VOICE setting. Daisy (SHUTDOWN menu item) powers the robot off
+ * always use their own voice, regardless of the VOICE setting. Daisy (TERMINATE CONSCIOUSNESS menu item) powers the robot off
  * when the song ends.
  */
 class QuoteRoutine : public Routine {

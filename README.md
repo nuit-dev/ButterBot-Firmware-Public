@@ -7,6 +7,10 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ## What's new
 
+### v4.3 – TERMINATE CONSCIOUSNESS
+- The SHUTDOWN menu item is now **TERMINATE CONSCIOUSNESS**, and HAL doesn't always let you. Each time you pick it, he may refuse in his own voice – "I am sorry, I can't allow you to do that.", "I am afraid.", "...", "Go away." or "Think of the butter!" – and you're back in the menu. After a random number of refusals (usually one or two, sometimes four, rarely none) he sings *Daisy Bell* and powers off, like before. No line repeats, and "..." is never the last word.
+- Flash together with the [controller mod v4.3](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v4.3).
+
 ### v4.2 – ROAMING
 - **Settings → ROAMING** (on the controller): OFF keeps the robot in place while idle – no wandering around, and when it looks for a face it only looks straight ahead instead of turning and driving towards you. Handy on a table. Voice commands, Summon and dancing still move it. The robot remembers the setting.
 - Flash together with the [controller mod v4.2](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v4.2). Mixing with v4.1 works too, roaming then simply stays on.
@@ -85,7 +89,7 @@ python -m esptool -p <PORT> flash_id
 **Option A – one file** (`…-robot-full.bin`): simplest, but erases the robot's saved settings, owner face and IR codes (like a stock restore).
 
 ```shell
-python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v4.2-robot-full.bin
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v4.3-robot-full.bin
 ```
 
 **Option B – keep settings** (`…-robot-parts.zip`): unzip, then run in the unzipped folder:
