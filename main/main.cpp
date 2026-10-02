@@ -224,6 +224,8 @@ protected:
 			RobotConfig::nightMode = config.nightMode;
 			RobotConfig::nightVolume = config.nightVolume;
 			RobotConfig::roaming = config.roaming != 0;
+			// VOICE as last set on the controller, so the startup greeting already uses it
+			setVoice(static_cast<VoicePreset>(ServiceLocator::SettingsInstance->getVoice()));
 		}
 
 		ServiceLocator::IRStorageInstance = std::make_unique<IRStorage>();
@@ -464,6 +466,10 @@ private:
 		Voice::user = preset; // used from the next utterance on
 		Phrases::toasterMode = preset == VoicePreset::Toaster;
 		Phrases::yodaMode = preset == VoicePreset::Yoda;
+		// Custom (NUIT): kept in NVS for the next power-on; written only when it changes (sent on every connect)
+		if(ServiceLocator::SettingsInstance && ServiceLocator::SettingsInstance->getVoice() != static_cast<uint8_t>(preset)){
+			ServiceLocator::SettingsInstance->setVoice(static_cast<uint8_t>(preset));
+		}
 	}
 
 	// Custom (NUIT): muted, night volume or volume (was a fixed 1.0 after unmuting, 0.8 at boot)

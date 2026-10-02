@@ -49,7 +49,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - Character quotes (Darth, Hawking, HAL, Daisy, Toaster, Yoda, Croatian) are never changed.
 - `components/ButterBot-Common/CMakeLists.txt` builds `Phrases.cpp` with `-Os` (rarely called, saves ~6 KB).
 - Partition table (v3): `factory` app partition 8432k -> 8624k, all data partitions after it moved by 0x30000
-  (they are found by name, not by address). ~140 KB of the app partition is free (v4.4), ~44 KB of flash left at the end.
+  (they are found by name, not by address). ~140 KB of the app partition is free (v5), ~44 KB of flash left at the end.
   NVS stays at 0x9000, so settings, owner face and IR codes survive the upgrade.
 - v4 - volume, night mode, clock:
   - `Ctrl::RobotConfig` (`RobotConfigData`: volume, `NightMode`, night volume) and `Ctrl::SetTime` (`SetTimeData`,
@@ -94,7 +94,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     so the controller's popup stays. One `TerminateRefusalLineRoutine<I>` per line, because scenario mappings match
     the data exactly. The controller decides how many refusals come before `DaisySong`.
   - Daisy window title is now "TERMINATE CONSCIOUSNESS".
-- v4.4 - TALKIE TOASTER all the way:
+- v5 (was v4.4) - TALKIE TOASTER all the way:
   - `Phrases.cpp`: a `Toaster_<Phrase>` array for every phrase category except the character quotes (generated block
     "BEGIN TALKIE TOASTER"), `buildToasterMappings()`, and `PhraseArrays::outputs()`, which `get()` / `map()` /
     `mapShown()` use: the Toaster list while `Phrases::toasterMode`, else the normal one. Same placeholders as the
@@ -105,6 +105,8 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     roll line, the notification count and "now playing" (through their Toaster templates).
   - `TerminateRefusalRoutine` speaks in the VOICE setting's voice in Toaster mode (HAL otherwise); Daisy stays HAL.
   - `RambleRoutine`: time-of-day and Thursday comments also in Toaster mode (their Toaster versions).
+  - VOICE is kept in robot NVS (key "Voice", `Settings::getVoice/setVoice`, written only when it changes) and applied at
+    boot right after the robot config, so the startup greeting uses it before the controller connects.
 
 ## Flashing the robot
 

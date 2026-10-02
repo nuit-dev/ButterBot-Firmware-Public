@@ -28,6 +28,10 @@ public:
 	RobotConfigData getRobotConfig() const;
 	void setRobotConfig(const RobotConfigData& config);
 
+	// Custom (NUIT): VOICE (VoicePreset), so the robot speaks in it from power-on, before the controller connects
+	uint8_t getVoice() const;
+	void setVoice(uint8_t voice);
+
 private:
 	SettingsStruct settingsStruct;
 
@@ -42,6 +46,8 @@ private:
 	static constexpr const char* NightModeKey = "NightMode";
 	static constexpr const char* NightVolumeKey = "NightVol";
 	static constexpr const char* RoamingKey = "Roaming";
+	uint8_t voice = 0;
+	static constexpr const char* VoiceKey = "Voice";
 };
 
 

@@ -7,12 +7,13 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ## What's new
 
-### v4.4 – Talkie Toaster, all the way
+### v5 – Talkie Toaster, all the way
 - With **VOICE → TALKIE TOASTER**, everything the robot says is now Talkie Toaster: 465 new lines covering every message – greetings, battery, modules, lights, the clock, dice, the camera, faces, phone, IR, movement, dancing, errors and the "Yes?" when it starts listening. The information stays (battery, time, temperature, the object it sees), it just comes with an offer of toast. "It's 14:05. Perfect time for toast."
 - **Toast facts and toast jokes** instead of the general Toaster lines, so FACT and JOKE still give you a fact and a joke.
 - **TERMINATE CONSCIOUSNESS** in Toaster mode: the toaster refuses ("You can't switch me off! I haven't made you any toast yet!"), and Daisy at the end is still HAL.
 - The menu characters (Bender, Ultron, Darth Vader, Hawking, HAL, Daisy, Yoda, HRVATSKI) keep their own lines, and the other voices are unchanged.
-- Flash together with the [controller mod v4.4](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v4.4), which shows the same Toaster lines.
+- The robot remembers the VOICE setting, so the startup greeting is already in the right voice, before the controller connects (it used to greet in NORMAL until the controller sent the setting).
+- Flash together with the [controller mod v5](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v5), which shows the same Toaster lines.
 
 ### v4.3 – TERMINATE CONSCIOUSNESS
 - The SHUTDOWN menu item is now **TERMINATE CONSCIOUSNESS**, and HAL doesn't always let you. Each time you pick it, he may refuse in his own voice – "I am sorry, I can't allow you to do that.", "I am afraid.", "...", "Go away." or "Think of the butter!" – and you're back in the menu. After a random number of refusals (usually one or two, sometimes four, rarely none) he sings *Daisy Bell* and powers off, like before. No line repeats, and "..." is never the last word.
@@ -96,7 +97,7 @@ python -m esptool -p <PORT> flash_id
 **Option A – one file** (`…-robot-full.bin`): simplest, but erases the robot's saved settings, owner face and IR codes (like a stock restore).
 
 ```shell
-python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v4.4-robot-full.bin
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v5-robot-full.bin
 ```
 
 **Option B – keep settings** (`…-robot-parts.zip`): unzip, then run in the unzipped folder:

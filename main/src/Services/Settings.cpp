@@ -1,4 +1,5 @@
 #include "Settings.h"
+#include "Audio/VoicePreset.h"
 #include <nvs_flash.h>
 
 DEFINE_LOG(Settings)
@@ -42,6 +43,16 @@ void Settings::setRobotConfig(const RobotConfigData& config){
 	nvs_commit(handle);
 }
 
+uint8_t Settings::getVoice() const{
+	return voice;
+}
+
+void Settings::setVoice(uint8_t voice){
+	this->voice = voice;
+	nvs_set_u8(handle, VoiceKey, voice);
+	nvs_commit(handle);
+}
+
 void Settings::load(){
 	size_t len = sizeof(SettingsStruct);
 	esp_err_t err = nvs_get_blob(handle, BlobName, &settingsStruct, &len);
@@ -55,4 +66,5 @@ void Settings::load(){
 	if(nvs_get_u8(handle, NightModeKey, &val) == ESP_OK && val <= static_cast<uint8_t>(NightMode::From00)) robotConfig.nightMode = val;
 	if(nvs_get_u8(handle, NightVolumeKey, &val) == ESP_OK && val >= 10 && val <= 100) robotConfig.nightVolume = val;
 	if(nvs_get_u8(handle, RoamingKey, &val) == ESP_OK && val <= 1) robotConfig.roaming = val;
+	if(nvs_get_u8(handle, VoiceKey, &val) == ESP_OK && val <= static_cast<uint8_t>(VoicePreset::Yoda)) voice = val;
 }
