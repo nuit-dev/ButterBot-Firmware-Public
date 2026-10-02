@@ -179,7 +179,8 @@ static void rollAndReport(Audio* audio, Com* com, AudioFrontend* af, AACAudioGen
 	CMF_LOG(DiceRollRoutine, LogLevel::Info, "Roll: %dd%d = %d", count, sides, result);
 
 	char rollText[64];
-	snprintf(rollText, sizeof(rollText), "%dd%d roll", count, sides);
+	// Custom (NUIT): TALKIE TOASTER adds a line
+	snprintf(rollText, sizeof(rollText), Phrases::toasterMode ? "%dd%d roll. Fingers crossed. Crumbs crossed." : "%dd%d roll", count, sides);
 	speakText(audio, rollText);
 
 	sendState(com, DiceRollData::Phase::RollAnim, diceType, count, 0);

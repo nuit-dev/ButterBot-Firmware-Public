@@ -77,6 +77,16 @@ namespace {
         { "State your request",   1511 },
     };
 
+    // Custom (NUIT): TALKIE TOASTER prompts, durations measured with the Toaster preset (flite 170 / 22 / 0.95, x0.9)
+    constexpr StartPrompt ToasterStartPrompts[] = {
+        { "Yes? Toast?",            1252 },
+        { "Talkie listening.",       922 },
+        { "What'll it be?",          734 },
+        { "How can I help? Toast?", 1815 },
+        { "Go on.",                  629 },
+        { "At your service.",        985 },
+    };
+
     constexpr SoundEffect Lasers1[] = {
         { "/spiffs/listen/lasers1/phaseJump1.aac",  384 },
         { "/spiffs/listen/lasers1/phaseJump2.aac",  384 },
@@ -137,7 +147,8 @@ namespace {
             return;
         }
 
-        const StartPrompt& prompt = StartPrompts[rand() % std::size(StartPrompts)];
+        const StartPrompt& prompt = Phrases::toasterMode ? ToasterStartPrompts[rand() % std::size(ToasterStartPrompts)]
+                                                         : StartPrompts[rand() % std::size(StartPrompts)];
         const uint32_t budget = prompt.durationMs >= IntroWindowMs ? 0 : IntroWindowMs - prompt.durationMs;
 
         const SfxGroup& group = SfxGroups[rand() % std::size(SfxGroups)];

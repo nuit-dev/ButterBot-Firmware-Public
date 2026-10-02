@@ -26,10 +26,10 @@ Routine::TickingState RambleRoutine::tick(float deltaTime){
     }
 
     // Custom (NUIT): when the clock is set, every third comment fits the time of day, and on Thursday some are
-    // about the new strip. Not in Talkie Toaster mode (all fun lines are toast there).
+    // about the new strip (in TALKIE TOASTER mode, their Toaster versions).
     RambleKind kind = RambleKind::Ramble;
     const Time* timeService = app->getService<Time>();
-    if(timeService != nullptr && timeService->isConfigured() && !Phrases::toasterMode && rand() % 3 == 0){
+    if(timeService != nullptr && timeService->isConfigured() && rand() % 3 == 0){
         const tm now = timeService->getTime();
         kind = (now.tm_wday == 4 && rand() % 2 == 0) ? RambleKind::Thursday : dayPeriod(now.tm_hour);
     }

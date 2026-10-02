@@ -4,6 +4,7 @@
 #include <Services/Audio/Audio.h>
 #include <BBData.h>
 #include <Phrases.h>
+#include <cstdio>
 #include "Audio/SpeechAudioGen.h"
 #include "Audio/SpeechAudioSource.h"
 #include "Audio/SpeechGen.h"
@@ -65,7 +66,14 @@ Routine::TickingState WhatsPlayingRoutine::tick(float deltaTime){
 
         bbData.id = static_cast<uint8_t>(id);
         com->sendData(BB::State::Scenario, BB::Action::Scenario::PhoneWhatsPlaying, bbData);
-        playText(mediaInfo.title + " by " + mediaInfo.artist);
+        // Custom (NUIT): TALKIE TOASTER wraps it in his own line
+        if(Phrases::toasterMode){
+            char buf[256];
+            snprintf(buf, sizeof(buf), Phrases::map(Phrase::PhonePlaying, id).c_str(), mediaInfo.title.c_str(), mediaInfo.artist.c_str());
+            playText(buf);
+        }else{
+            playText(mediaInfo.title + " by " + mediaInfo.artist);
+        }
     }
 
     return TickingState::Done;

@@ -32,7 +32,8 @@ Routine::TickingState TerminateRefusalRoutine::tick(float deltaTime){
 		return TickingState::Done;
 	}
 
-	Voice::setOverride(VoicePreset::Hal);
+	// TALKIE TOASTER refuses in his own voice (the VOICE setting), everyone else as HAL
+	if(!Phrases::toasterMode) Voice::setOverride(VoicePreset::Hal);
 	audio->play(ServiceLocator::SpeechAudioGenInstance.get(), std::make_unique<SpeechAudioSource>(SpeechGen::InputType::Text, text));
 	audio->waitEnd(portMAX_DELAY);
 	return TickingState::Done;

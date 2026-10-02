@@ -7,7 +7,7 @@
 /**
  * Custom (NUIT): TERMINATE CONSCIOUSNESS refused. The controller decides how many times HAL refuses before Daisy
  * and which line comes next (Scenario::TerminateRefusal, ScenarioData::raw = Phrase::TerminateRefusal index);
- * the robot only says that line in the HAL voice ("..." stays silent). Nothing is sent back, so the controller's
+ * the robot only says that line, as HAL (TALKIE TOASTER: in his own voice; "..." stays silent). Nothing is sent back, so the controller's
  * popup and menu stay as they are.
  */
 class TerminateRefusalRoutine : public Routine {

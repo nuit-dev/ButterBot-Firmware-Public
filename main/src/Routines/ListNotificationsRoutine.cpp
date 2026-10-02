@@ -169,9 +169,15 @@ Routine::TickingState ListNotificationsRoutine::tick(float deltaTime){
             const int16_t countId = Phrases::get(Phrase::PhoneNotifCount);
             sendListNotifsState(com, PhoneListNotifsData::Phase::Count, (countId >= 0) ? static_cast<uint8_t>(countId) : 0, count, count);
 
-            const std::string countText = (count == 1)
+            std::string countText = (count == 1)
                 ? "You have 1 notification."
                 : "You have " + std::to_string(count) + " notifications.";
+            // Custom (NUIT): TALKIE TOASTER says the count through his own line (the one the controller shows)
+            if(Phrases::toasterMode && count > 1 && countId >= 0){
+                char buf[128];
+                snprintf(buf, sizeof(buf), Phrases::map(Phrase::PhoneNotifCount, countId).c_str(), static_cast<int>(count));
+                countText = buf;
+            }
             playText(audio, countText);
 
             CMF_LOG(ListNotificationsRoutine, LogLevel::Info, "Reading %d notifications", (int)count);
