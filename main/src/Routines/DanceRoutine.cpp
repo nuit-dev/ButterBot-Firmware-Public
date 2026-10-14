@@ -282,12 +282,12 @@ void DanceRoutine::onButtonEvent(int button, ISRButtonInput::Action action){
 
 void DanceRoutine::onProximityReading(ProxState front, ProxState bottom){
 	proxReadingReceived = true;
-	proxUnsafe = (bottom == ProxState::Uncovered) || (front == ProxState::Covered);
+	proxUnsafe = (front == ProxState::Covered);
 }
 
 void DanceRoutine::onProximityChange(ProxSensor sensor, bool state){
-	if((sensor == ProxSensor::Bottom && !state) || (sensor == ProxSensor::Front && state)){
-		CMF_LOG(DanceRoutine, Debug, "obstacle or edge");
+	if(sensor == ProxSensor::Front && state){
+		CMF_LOG(DanceRoutine, Debug, "front obstacle");
 		interrupted = true;
 	}
 }

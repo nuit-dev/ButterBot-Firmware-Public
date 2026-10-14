@@ -130,11 +130,11 @@ void MovementCommandRoutine::speak(Phrase phrase){
 
 void MovementCommandRoutine::onProximityReading(ProxState front, ProxState bottom){
 	proxReadingReceived = true;
-	proxUnsafe = (bottom == ProxState::Uncovered) || (front == ProxState::Covered);
+	proxUnsafe = (front == ProxState::Covered);
 }
 
 void MovementCommandRoutine::onProximityChange(ProxSensor sensor, bool state){
-	if((sensor == ProxSensor::Bottom && !state) || (sensor == ProxSensor::Front && state)){
+	if(sensor == ProxSensor::Front && state){
 		proxInterrupted = true;
 	}
 }

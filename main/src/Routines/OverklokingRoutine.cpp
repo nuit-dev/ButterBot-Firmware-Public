@@ -46,7 +46,6 @@ Routine::TickingState OverklokingRoutine::tick(float deltaTime){
 
 		sm->bindRoutine(baseboard->onProximityReading, this, &OverklokingRoutine::onProximityReading);
 		sm->bindRoutine(baseboard->onProximityChange, this, &OverklokingRoutine::onProximityChange);
-		sm->bindRoutine(motion->onMotion, this, &OverklokingRoutine::onMotion);
 		baseboard->requestProximityState();
 		proxDeadlineMs = millis() + ProxReadingTimeoutMs;
 
@@ -128,16 +127,11 @@ void OverklokingRoutine::speakPhrase(Phrase phrase){
 
 void OverklokingRoutine::onProximityReading(ProxState front, ProxState bottom){
 	proxReadingReceived = true;
-	proxUnsafe = (bottom == ProxState::Uncovered) || (front == ProxState::Covered);
+	proxUnsafe = (front == ProxState::Covered);
 }
 
 void OverklokingRoutine::onProximityChange(ProxSensor sensor, bool state){
-	if((sensor == ProxSensor::Bottom && !state) || (sensor == ProxSensor::Front && state)){
+	if(sensor == ProxSensor::Front && state){
 		proxInterrupted = true;
 	}
-}
-
-void OverklokingRoutine::onMotion(MotionType type){
-	// Motion events only fire while lifted off the ground; treat any as an unsafe interruption
-	proxInterrupted = true;
 }

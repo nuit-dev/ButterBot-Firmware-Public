@@ -112,11 +112,10 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - Upstream: BLE client / ConMan rework, `BaseBoard` pauses proximity scanning around motor writes and rebaselines
     `ProxRebaselineDelayMs` after, `MotionService` rebaselines after `StillBatchCount` still batches while lifted,
     RC turn speeds, FaceDet stop/unload race.
-  - Upstream dropped the bottom sensor from the moving routines (front only). Restored in `WanderRoutine`,
-    `PersonRoutine`, `SummonEventRoutine`, `DanceRoutine` and `MovementCommandRoutine`: bottom uncovered or front
-    covered = unsafe (Dance now also stops for the front sensor, like upstream).
-  - `MotionService`: the still rebaseline only runs after `sawMotion` (moved by hand). A robot that stopped with the
-    floor sensor over a table edge is just as still, and a rebaseline there would make the edge the new floor.
+  - Upstream dropped the bottom sensor and motion events from the moving routines (front sensor only);
+    `OverklokingRoutine` now does the same. Lifting is still caught by `MotionService::isUprightOnGround()` before
+    every move. Keeping the bottom (edge) check was tried: on a dark table the bottom sensor reports "lifted" while
+    driving, so the robot stopped and talked about being shaken, and it did not see the edge anyway.
   - `BLE/Bonds.h` / `Bonds.cpp` (`BLE::isBonded`) are missing from the upstream commit, so upstream does not build;
     ours checks the address against `esp_ble_get_bond_device_list`.
 ## Flashing the robot

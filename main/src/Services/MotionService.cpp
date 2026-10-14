@@ -171,9 +171,7 @@ void MotionService::loop() noexcept{
 			stillBatches = 0;
 		}
 
-		// Custom (NUIT): only after it was moved by hand. Standing still with the floor sensor over a table edge
-		// looks the same, and a rebaseline there would let the next routine drive off the edge.
-		if(stillBatches >= StillBatchCount && sawMotion){
+		if(stillBatches >= StillBatchCount){
 			proximityLifted = false;
 			if(BaseBoard* baseboard = getApp()->getService<BaseBoard>()){
 				baseboard->rebaselineProximity();
