@@ -49,7 +49,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - Character quotes (Darth, Hawking, HAL, Daisy, Toaster, Yoda, Croatian) are never changed.
 - `components/ButterBot-Common/CMakeLists.txt` builds `Phrases.cpp` with `-Os` (rarely called, saves ~6 KB).
 - Partition table (v3): `factory` app partition 8432k -> 8624k, all data partitions after it moved by 0x30000
-  (they are found by name, not by address). ~140 KB of the app partition is free (v5), ~44 KB of flash left at the end.
+  (they are found by name, not by address). ~134 KB of the app partition is free (v5.1), ~44 KB of flash left at the end.
   NVS stays at 0x9000, so settings, owner face and IR codes survive the upgrade.
 - v4 - volume, night mode, clock:
   - `Ctrl::RobotConfig` (`RobotConfigData`: volume, `NightMode`, night volume) and `Ctrl::SetTime` (`SetTimeData`,
@@ -108,6 +108,17 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - VOICE is kept in robot NVS (key "Voice", `Settings::getVoice/setVoice`, written only when it changes) and applied at
     boot right after the robot config, so the startup greeting uses it before the controller connects.
 
+- v5.1 - merged CircuitMess robot 1.0.1 (upstream master, merge branch `merge-upstream-1.0.x`):
+  - Upstream: BLE client / ConMan rework, `BaseBoard` pauses proximity scanning around motor writes and rebaselines
+    `ProxRebaselineDelayMs` after, `MotionService` rebaselines after `StillBatchCount` still batches while lifted,
+    RC turn speeds, FaceDet stop/unload race.
+  - Upstream dropped the bottom sensor from the moving routines (front only). Restored in `WanderRoutine`,
+    `PersonRoutine`, `SummonEventRoutine`, `DanceRoutine` and `MovementCommandRoutine`: bottom uncovered or front
+    covered = unsafe (Dance now also stops for the front sensor, like upstream).
+  - `MotionService`: the still rebaseline only runs after `sawMotion` (moved by hand). A robot that stopped with the
+    floor sensor over a table edge is just as still, and a rebaseline there would make the edge the new floor.
+  - `BLE/Bonds.h` / `Bonds.cpp` (`BLE::isBonded`) are missing from the upstream commit, so upstream does not build;
+    ours checks the address against `esp_ble_get_bond_device_list`.
 ## Flashing the robot
 
 Do NOT flash the robot with esptool `--after hard_reset` (default of `idf.py flash`): it ends up stuck, ignores

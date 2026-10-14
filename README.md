@@ -7,6 +7,11 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ## What's new
 
+### v5.1 – CircuitMess update 1.0.1
+- Includes the official CircuitMess robot update 1.0.1: a steadier Bluetooth connection to the controller, fewer false proximity sensor readings while the motors run, sharper and faster turns when you drive it with the controller, and a face detection fix.
+- The table-edge protection stays: the robot still stops when the floor sensor loses the ground (the official update only stops for obstacles in front), and after it stops at an edge it stays put until you pick it up.
+- Flash together with the [controller mod v5.1](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v5.1).
+
 ### v5 – Talkie Toaster, all the way
 - With **VOICE → TALKIE TOASTER**, everything the robot says is now Talkie Toaster: 465 new lines covering every message – greetings, battery, modules, lights, the clock, dice, the camera, faces, phone, IR, movement, dancing, errors and the "Yes?" when it starts listening. The information stays (battery, time, temperature, the object it sees), it just comes with an offer of toast. "It's 14:05. Perfect time for toast."
 - **Toast facts and toast jokes** instead of the general Toaster lines, so FACT and JOKE still give you a fact and a joke.
