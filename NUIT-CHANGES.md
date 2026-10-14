@@ -108,7 +108,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - VOICE is kept in robot NVS (key "Voice", `Settings::getVoice/setVoice`, written only when it changes) and applied at
     boot right after the robot config, so the startup greeting uses it before the controller connects.
 
-- v5.1 - merged CircuitMess robot 1.0.1 (upstream master, merge branch `merge-upstream-1.0.x`):
+- v5.1 - merged CircuitMess robot 1.0.5 (tag v1.0.5 = commit 17f440e "Update 1.0.1", branch `merge-upstream-1.0.x`):
   - Upstream: BLE client / ConMan rework, `BaseBoard` pauses proximity scanning around motor writes and rebaselines
     `ProxRebaselineDelayMs` after, `MotionService` rebaselines after `StillBatchCount` still batches while lifted,
     RC turn speeds, FaceDet stop/unload race.
