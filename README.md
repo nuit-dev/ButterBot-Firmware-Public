@@ -5,6 +5,8 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 **What can I say to it?** [Voice commands](docs/VOICE-COMMANDS.md) · **What does it recognise?** [Objects and faces](docs/VISION.md)
 
+**I had a lot of fun playing with this robot, but this one (v5+) is hands down the best mod yet. I have the robot on my table turned on non-stop, and to have something that is actually reminiscent of a living Talkie Toaster from Red Dwarf in such an elegant (and eloquent manner) is an absolute blast! Do try it!**
+
 ## What's new
 
 ### v5.1 – CircuitMess update 1.0.5
@@ -19,8 +21,6 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 - The menu characters (Bender, Ultron, Darth Vader, Hawking, HAL, Daisy, Yoda, HRVATSKI) keep their own lines, and the other voices are unchanged.
 - The robot remembers the VOICE setting, so the startup greeting is already in the right voice, before the controller connects (it used to greet in NORMAL until the controller sent the setting).
 - Flash together with the [controller mod v5](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v5), which shows the same Toaster lines.
-
-**I had a lot of fun playing with this robot, but this one is hands down the best mod yet. I have the robot on my table turned on non-stop, and to have something that is actually reminiscent of a living Talkie Toaster from Red Dwarf in such an elegant (and eloquent manner) is an absolute blast! Do try it!**
 
 ### v4.3 – TERMINATE CONSCIOUSNESS
 - The SHUTDOWN menu item is now **TERMINATE CONSCIOUSNESS**, and HAL doesn't always let you. Each time you pick it, he may refuse in his own voice – "I am sorry, I can't allow you to do that.", "I am afraid.", "...", "Go away." or "Think of the butter!" – and you're back in the menu. After a random number of refusals (usually one or two, sometimes four, rarely none) he sings *Daisy Bell* and powers off, like before. No line repeats, and "..." is never the last word.
