@@ -37,6 +37,8 @@ public:
 	 */
 	void setProximityScanning(bool enabled);
 
+	void rebaselineProximity();
+
 	// Superseded by relative threshold logic on Base — no-op, kept for API compatibility
 	void setProximityFrontThreshold(uint16_t threshold);
 
@@ -119,6 +121,8 @@ private:
 	StrongObjectPtr<Timer> motorTimer;
 
 	static constexpr uint32_t MotorControlPeriod = 250; //[ms], must be below the defined dead-man-switch timeframe of 500ms
+	static constexpr uint32_t ProxStopSettleMs = 3;
+	static constexpr uint32_t ProxRebaselineDelayMs = 100;
 	/**
 	 * Main blocking semaphore of BaseBoard's task (thread).
 	 * Will be unblocked either through the IRQ routine from BaseBoard's interrupt pin,
@@ -126,6 +130,10 @@ private:
 	 */
 	static SemaphoreHandle_t sem;
 	static void timerFunc(void*);
+
+	StrongObjectPtr<Timer> proxTimer;
+	static std::atomic<bool> proxRebaselineDue;
+	static void proxTimerFunc(void*);
 
 	static void IRAM_ATTR motorBoardISR(void* arg);
 

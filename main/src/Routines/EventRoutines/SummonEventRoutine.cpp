@@ -75,7 +75,6 @@ Routine::TickingState SummonEventRoutine::tick(float deltaTime){
 
 			sm->bindRoutine(baseBoard->onProximityReading, this, &SummonEventRoutine::onProximityReading);
 			sm->bindRoutine(baseBoard->onProximityChange, this, &SummonEventRoutine::onProximityChange);
-			sm->bindRoutine(motionService->onMotion, this, &SummonEventRoutine::onMotion);
 			baseBoard->requestProximityState();
 			proxDeadlineMs = millis() + ProxReadingTimeoutMs;
 			phase = Phase::ProxCheck;
@@ -226,9 +225,4 @@ void SummonEventRoutine::onProximityChange(ProxSensor sensor, bool state){
 	if((sensor == ProxSensor::Bottom && !state) || (sensor == ProxSensor::Front && state)){
 		proxInterrupted = true;
 	}
-}
-
-void SummonEventRoutine::onMotion(MotionType type){
-	// Motion events only fire while lifted off the ground; treat any as an unsafe interruption.
-	proxInterrupted = true;
 }
