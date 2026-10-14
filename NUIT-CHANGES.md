@@ -112,12 +112,12 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - Upstream: BLE client / ConMan rework, `BaseBoard` pauses proximity scanning around motor writes and rebaselines
     `ProxRebaselineDelayMs` after, `MotionService` rebaselines after `StillBatchCount` still batches while lifted,
     RC turn speeds, FaceDet stop/unload race.
-  - Upstream dropped the bottom sensor and motion events from the moving routines (front sensor only);
-    `OverklokingRoutine` now does the same. Lifting is still caught by `MotionService::isUprightOnGround()` before
-    every move. Keeping the bottom (edge) check was tried: on a dark table the bottom sensor reports "lifted" while
-    driving, so the robot stopped and talked about being shaken, and it did not see the edge anyway.
+  - Proximity handling is exactly upstream's: the moving routines stop only for the front sensor and no longer on
+    motion events, and `OverklokingRoutine` now does the same. Our SENSOR filter (`BaseBoard::setProximityEnabled`)
+    sits on top of it, unchanged.
   - `BLE/Bonds.h` / `Bonds.cpp` (`BLE::isBonded`) are missing from the upstream commit, so upstream does not build;
     ours checks the address against `esp_ble_get_bond_device_list`.
+
 ## Flashing the robot
 
 Do NOT flash the robot with esptool `--after hard_reset` (default of `idf.py flash`): it ends up stuck, ignores

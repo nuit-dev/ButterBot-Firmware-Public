@@ -8,8 +8,8 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 ## What's new
 
 ### v5.1 – CircuitMess update 1.0.1
-- Includes the official CircuitMess robot update 1.0.1: a steadier Bluetooth connection to the controller, fewer false proximity sensor readings while the motors run, sharper and faster turns when you drive it with the controller, and a face detection fix.
-- Like the official update, moving now only stops for obstacles in front, including the OVERKLOKING drive. The floor sensor still tells when the robot is picked up, but it does not reliably see a table edge (on a dark table not at all), so on a table use **Settings → ROAMING OFF**.
+- Includes the official CircuitMess robot update 1.0.1: a steadier Bluetooth connection to the controller, a workaround for the motors disturbing the proximity sensors, sharper and faster turns when you drive it with the controller, and a face detection fix.
+- The proximity sensors work exactly as in the official update (moving only stops for obstacles in front, the OVERKLOKING drive too). **Settings → SENSOR** still turns them off.
 - Flash together with the [controller mod v5.1](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v5.1).
 
 ### v5 – Talkie Toaster, all the way
