@@ -88,7 +88,7 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 ### v1
 - **Action menu:** OVERKLOKING, BENDER and ULTRON – the robot says a random quote and the controller shows it. Long quotes go sentence by sentence; Shut Up or Poke stops them.
 - **Hold Poke 1 s:** drives ~10 cm forward and says "nju aj ti OVERKLOKING is the best!"
-- **Settings → SENSOR:** turn off the front and/or floor proximity sensors, for surfaces where they misfire. With the floor sensor off, the robot can drive off a table edge.
+- **Settings → SENSOR:** turn off the front and/or floor proximity sensors, for surfaces where they misfire. With the floor sensor off, the robot can drive off a table edge (since v5.1 moving only stops for the front sensor anyway).
 - **Menu navigation fix** (in the controller mod): joystick up/down now reliably moves through the action menu.
 
 ## About nju aj ti OVERKLOKING
@@ -126,7 +126,7 @@ python -m esptool -p <PORT> flash_id
 **Option A – one file** (`…-robot-full.bin`): simplest, but erases the robot's saved settings, owner face and IR codes (like a stock restore).
 
 ```shell
-python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v5-robot-full.bin
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v5.1-robot-full.bin
 ```
 
 **Option B – keep settings** (`…-robot-parts.zip`): unzip, then run in the unzipped folder:

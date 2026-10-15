@@ -16,8 +16,9 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   "no obstacle", a disabled bottom sensor reads "on the ground". Robot boots with all sensors on.
 - Voice presets NORMAL / HAWKING / VADER / HAL 9000 / TALKIE TOASTER / YODA:
   `Ctrl::VoiceNormal/VoiceHawking/VoiceVader/VoiceHal/VoiceToaster/VoiceYoda`
-  (end of `Ctrl::Command`), handled in `main.cpp` -> `Voice::user` (`Audio/VoicePreset.h`). Robot boots with NORMAL,
-  the controller sends its setting on every connect. Applied at the start of every utterance:
+  (end of `Ctrl::Command`), handled in `main.cpp` -> `Voice::user` (`Audio/VoicePreset.h`). The robot boots with
+  the last VOICE (robot NVS since v5), and the controller sends its setting on every connect. Applied at the start
+  of every utterance:
   - `Audio/SpeechGen` – flite features of cmu_us_kal16 (`int_f0_target_mean`, `int_f0_target_stddev`,
     `duration_stretch`), table `PresetParams` in `SpeechGen.h`
   - `Audio/SpeechAudioGen` – effects per preset, table `FxParams` in `SpeechAudioGen.h`: resample slowdown
@@ -30,7 +31,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   `ToasterQuote`, `YodaQuote`, `CroatianQuote`,
   routines in `Routines/QuoteRoutine.h`. They always use their own voice (`Voice::setOverride`, cleared in the
   QuoteRoutine destructor, so the VOICE setting is back afterwards).
-- `DaisySong` = controller menu item SHUTDOWN: HAL sings the Daisy chorus from 2001, every line slower and lower
+- `DaisySong` = controller menu item TERMINATE CONSCIOUSNESS (SHUTDOWN before v4.3): HAL sings the Daisy chorus from 2001, every line slower and lower
   (`Voice::dying`), then the robot powers off via `ShutdownService::Shutdown(Command, /*speak*/ false)` (no
   "turning off" line; it waits 3 s instead so the controller can show its shutdown screen before the BLE link
   drops). Shut Up / Poke during the song cancels the shutdown.
@@ -42,8 +43,8 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   `components/flite` (print the Word / Segment relations of `flite_synth_text`) before flashing.
 - Voice modes in ButterBot-Common (`Phrases::toasterMode` / `Phrases::yodaMode`, set from the VOICE setting on robot
   and controller, so both pick and show the same line):
-  - TALKIE TOASTER: Ramble, Fact, Joke, Poke and Profanity lines come from `ToasterPhrases`; functional messages
-    (battery, errors, time, dice, modules...) stay as they are.
+  - TALKIE TOASTER: every phrase category except the character quotes has its own Toaster list (since v5, see
+    below); before v5 only Ramble, Fact, Joke, Poke and Profanity switched to `ToasterPhrases`.
   - YODA: `map()` / `mapShown()` turn sentences around ("I will remember." -> "Remember, I will."), using the first
     auxiliary verb in the first four words; sentences without one stay as they are.
   - Character quotes (Darth, Hawking, HAL, Daisy, Toaster, Yoda, Croatian) are never changed.
@@ -107,7 +108,6 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - `RambleRoutine`: time-of-day and Thursday comments also in Toaster mode (their Toaster versions).
   - VOICE is kept in robot NVS (key "Voice", `Settings::getVoice/setVoice`, written only when it changes) and applied at
     boot right after the robot config, so the startup greeting uses it before the controller connects.
-
 - v5.1 - merged CircuitMess robot 1.0.5 (tag v1.0.5 = commit 17f440e "Update 1.0.1", branch `merge-upstream-1.0.x`):
   - Upstream: BLE client / ConMan rework, `BaseBoard` pauses proximity scanning around motor writes and rebaselines
     `ProxRebaselineDelayMs` after, `MotionService` rebaselines after `StillBatchCount` still batches while lifted,
