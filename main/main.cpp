@@ -217,13 +217,14 @@ protected:
 
 		ServiceLocator::SettingsInstance = std::make_unique<Settings>();
 
-		// Custom (NUIT): volume and night mode as last set on the controller
+		// Custom (NUIT): volume, night mode and chatter frequency as last set on the controller
 		{
 			const RobotConfigData config = ServiceLocator::SettingsInstance->getRobotConfig();
 			RobotConfig::volume = config.volume;
 			RobotConfig::nightMode = config.nightMode;
 			RobotConfig::nightVolume = config.nightVolume;
 			RobotConfig::roaming = config.roaming != 0;
+			RobotConfig::chatter = config.chatter;
 			// VOICE as last set on the controller, so the startup greeting already uses it
 			setVoice(static_cast<VoicePreset>(ServiceLocator::SettingsInstance->getVoice()));
 		}
@@ -363,8 +364,8 @@ protected:
 private:
 	static constexpr uint64_t ShutdownButtonPressTime = 3000;
 	static constexpr uint32_t ForcePowerOffTime = 10000;
-	bool pressed;
-	uint64_t lastPress;
+	bool pressed = false;
+	uint64_t lastPress = 0;
 	StrongObjectPtr<Timer> forceOffTimer;
 	inline static bool muted = false;
 
@@ -499,16 +500,18 @@ private:
 		config.nightVolume = std::clamp<uint8_t>(config.nightVolume, 10, 100);
 		if(config.nightMode > static_cast<uint8_t>(NightMode::From00)) config.nightMode = 0;
 		config.roaming = config.roaming != 0;
+		if(config.chatter > static_cast<uint8_t>(ChatterMode::Toaster)) config.chatter = static_cast<uint8_t>(ChatterMode::Normal);
 
 		RobotConfig::volume = config.volume;
 		RobotConfig::nightMode = config.nightMode;
 		RobotConfig::nightVolume = config.nightVolume;
 		RobotConfig::roaming = config.roaming;
+		RobotConfig::chatter = config.chatter;
 
 		if(ServiceLocator::SettingsInstance){
 			const RobotConfigData stored = ServiceLocator::SettingsInstance->getRobotConfig();
 			if(stored.volume != config.volume || stored.nightMode != config.nightMode || stored.nightVolume != config.nightVolume ||
-			   stored.roaming != config.roaming){
+			   stored.roaming != config.roaming || stored.chatter != config.chatter){
 				ServiceLocator::SettingsInstance->setRobotConfig(config);
 			}
 		}

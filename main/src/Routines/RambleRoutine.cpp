@@ -11,6 +11,7 @@
 #include "Audio/SpeechGen.h"
 #include "Services/Com.h"
 #include "Services/Time.h"
+#include "Util/RobotConfig.h"
 #include <QuoteText.h>
 
 DEFINE_LOG(RambleRoutine)
@@ -25,11 +26,15 @@ Routine::TickingState RambleRoutine::tick(float deltaTime){
         abort();
     }
 
-    // Custom (NUIT): when the clock is set, every third comment fits the time of day, and on Thursday some are
-    // about the new strip (in TALKIE TOASTER mode, their Toaster versions).
+    // Custom (NUIT): CHATTER = TOASTER: only the toaster lines, whatever the VOICE - no time-of-day or Thursday comments.
+    // Otherwise, when the clock is set, every third comment fits the time of day, and on Thursday some are about the
+    // new strip (in TALKIE TOASTER voice, their Toaster versions).
     RambleKind kind = RambleKind::Ramble;
     const Time* timeService = app->getService<Time>();
-    if(timeService != nullptr && timeService->isConfigured() && rand() % 3 == 0){
+    const bool toasterOnly = RobotConfig::chatter.load() == static_cast<uint8_t>(ChatterMode::Toaster);
+    if(toasterOnly){
+        kind = RambleKind::Toaster;
+    }else if(timeService != nullptr && timeService->isConfigured() && rand() % 3 == 0){
         const tm now = timeService->getTime();
         kind = (now.tm_wday == 4 && rand() % 2 == 0) ? RambleKind::Thursday : dayPeriod(now.tm_hour);
     }

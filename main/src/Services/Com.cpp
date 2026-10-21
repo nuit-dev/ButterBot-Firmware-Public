@@ -73,11 +73,13 @@ void Com::sendData(BB::State state, BB::Action::Scenario action, size_t size, co
 void Com::sendData(BB::State state, BB::Action::RC action, size_t size, const uint8_t* data){
 	BB::Action _action = {
 		.remoteControl = action
-};
+	};
 	sendData(state, _action, size, data);
 }
 
 void Com::sendData(BB::State state, BB::Action action, size_t size, const uint8_t* data){
+	std::lock_guard<std::mutex> guard(txMutex);
+
 	BB bbData = {
 			.state = state,
 			.action = action,
@@ -152,7 +154,7 @@ void Com::tick(float deltaTime) noexcept{
 			return;
 		}
 
-		RobotConfigData config{}; // a v4 controller sends 3 bytes, roaming stays at its default (on)
+		RobotConfigData config{}; // a v4 controller sends 3 bytes, roaming stays at its default (on), chatter stays normal (2)
 		memcpy(&config, buf.data() + sizeof(Ctrl::Command), std::min(buf.size() - sizeof(Ctrl::Command), sizeof(RobotConfigData)));
 		OnRobotConfig.broadcast(config);
 		return;

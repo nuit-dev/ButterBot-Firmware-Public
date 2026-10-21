@@ -50,7 +50,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - Character quotes (Darth, Hawking, HAL, Daisy, Toaster, Yoda, Croatian) are never changed.
 - `components/ButterBot-Common/CMakeLists.txt` builds `Phrases.cpp` with `-Os` (rarely called, saves ~6 KB).
 - Partition table (v3): `factory` app partition 8432k -> 8624k, all data partitions after it moved by 0x30000
-  (they are found by name, not by address). ~134 KB of the app partition is free (v5.1), ~44 KB of flash left at the end.
+  (they are found by name, not by address). ~16 KB of the app partition are free (v6), ~44 KB of flash left at the end.
   NVS stays at 0x9000, so settings, owner face and IR codes survive the upgrade.
 - v4 - volume, night mode, clock:
   - `Ctrl::RobotConfig` (`RobotConfigData`: volume, `NightMode`, night volume) and `Ctrl::SetTime` (`SetTimeData`,
@@ -117,6 +117,26 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     sits on top of it, unchanged.
   - `BLE/Bonds.h` / `Bonds.cpp` (`BLE::isBonded`) are missing from the upstream commit, so upstream does not build;
     ours checks the address against `esp_ble_get_bond_device_list`.
+- v6 - CHATTER, toaster-only idle chatter, toaster fidget:
+  - `RobotConfigData::chatter` (`ChatterMode`: Off / Rare / Normal / Frequent / Toaster, 5th byte, default Normal;
+    `RobotConfigDataV5Size`; shorter payloads leave it at the default). NVS key "Chatter", `RobotConfig::chatter`.
+  - `IdleState`: `rescheduleRandomRoutine()` takes the delay from CHATTER (Off 15-30 min, or no schedule at all with
+    ROAMING OFF; Rare 60-180; Normal 30-60; Frequent 10-20; Toaster 3-8 min). `onRobotConfig` is bound only to wake the
+    ticking thread: `maybeStartRandomRoutine()` compares CHATTER / ROAMING with the values the schedule was made for and
+    reschedules. `getDynamicTickInterval()` sleeps until woken while nothing is scheduled (UINT64_MAX).
+  - `pickRandomRoutine()`: CHATTER Off drops Ramble and Observe; Toaster drops Observe and Person and gives Ramble
+    weight 8. Identical to upstream otherwise (`shouldYieldToEvent`, `endActiveRoutine` untouched).
+  - `RambleKind::Toaster` / `Phrase::RambleToaster` (end of the enums): CHATTER Toaster speaks `Toaster_Ramble`
+    (1,015 lines) whatever the VOICE, no time-of-day or Thursday kinds. The plain `Ramble` list is the original one
+    again; the Toaster table (`Phrases::toasterMode`) uses `Toaster_Ramble` for `Ramble` as before. The 15 hand-picked
+    Red Dwarf lines of v5 are in the list. `RambleData::kind` carries `Toaster` so the controller shows the same line.
+  - `Routines/ToasterFidgetRoutine`: VOICE TALKIE TOASTER replaces `WanderRoutine` in the idle list (also with ROAMING
+    OFF): 2-3 turns on the spot (8-18 degrees, 4000 ms per 180 degrees, right and left add up to the same angle),
+    only on the ground and not while charging.
+  - `main.cpp`: `pressed` / `lastPress` have initialisers (the application object lives on the heap). `Com::sendData`
+    holds `txMutex` around the shared `txBuf` (it is called from several threads; the BLE send only takes the short
+    connection lock, no lock cycle).
+  - ~16 KB of the app partition are left (8,814,096 of 8,830,976 bytes).
 
 ## Flashing the robot
 

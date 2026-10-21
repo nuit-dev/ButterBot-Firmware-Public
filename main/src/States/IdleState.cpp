@@ -23,6 +23,7 @@
 #include "Routines/EventRoutines/GasConfiguredEventRoutine.h"
 #include "Routines/EventRoutines/SummonEventRoutine.h"
 #include "Routines/WanderRoutine.h"
+#include "Routines/ToasterFidgetRoutine.h"
 #include "Routines/BreathRoutine.h"
 #include "Audio/VoicePreset.h"
 #include "Util/RobotConfig.h"
@@ -33,6 +34,7 @@ const std::vector<IdleState::RandomRoutineDef> IdleState::RandomRoutines = {
 	{ &makeRoutine<RambleRoutine>, 3 },
 	{ &makeRoutine<ObserveRoutine>, 1 },
 	{ &makeRoutine<WanderRoutine>, 2 },
+	{ &makeRoutine<ToasterFidgetRoutine>, 2 }, // Custom (NUIT): TALKIE TOASTER voice only, instead of Wander
 	{ &makeRoutine<PersonRoutine>, 1 },
 	{ &makeRoutine<BreathRoutine>, 2 }, // Custom (NUIT): only while VOICE is VADER, see pickRandomRoutine
 };
@@ -53,7 +55,9 @@ const std::array<EventRoutineFactory, static_cast<uint8_t>(EventBag::EventType::
 };
 
 IdleState::IdleState(BBStateMachine* sm) : State(sm){
-	nextRandomRoutineTime = millis() + MinRandomDelay;
+	lastChatterMode = RobotConfig::chatter.load();
+	lastRoaming = RobotConfig::roaming.load();
+	rescheduleRandomRoutine();
 
 	const Application* app = ApplicationStatics::getApplication();
 	eventBag = app->getService<EventBag>();
@@ -78,6 +82,7 @@ IdleState::IdleState(BBStateMachine* sm) : State(sm){
 
 	sm->bindState(com->OnCommand, this, &IdleState::onCommand);
 	sm->bindState(com->OnRCData, this, &IdleState::onRCData);
+	sm->bindState(com->OnRobotConfig, this, &IdleState::onRobotConfig);
 
 	auto motionService = app->getService<MotionService>();
 	if(motionService == nullptr){
@@ -217,7 +222,14 @@ void IdleState::maybeStartRandomRoutine(){
 		return;
 	}
 
-	if(millis() < nextRandomRoutineTime){
+	// Custom (NUIT): CHATTER or ROAMING changed on the controller - make a new schedule now
+	if(RobotConfig::chatter.load() != lastChatterMode || RobotConfig::roaming.load() != lastRoaming){
+		lastChatterMode = RobotConfig::chatter.load();
+		lastRoaming = RobotConfig::roaming.load();
+		rescheduleRandomRoutine();
+	}
+
+	if(nextRandomRoutineTime == UINT64_MAX || millis() < nextRandomRoutineTime){
 		return;
 	}
 
@@ -238,14 +250,33 @@ void IdleState::maybeStartRandomRoutine(){
 RoutineFactory IdleState::pickRandomRoutine() const{
 	// Custom (NUIT): the breath is an idle "comment" only with the VADER voice; ROAMING OFF = no wandering
 	const auto usable = [](const RandomRoutineDef& def){
-		if(def.routine == &makeRoutine<WanderRoutine> && !RobotConfig::roaming) return false;
+		// Custom (NUIT): TALKIE TOASTER voice twitches on the spot instead of wandering (also with ROAMING OFF);
+		// every other voice wanders (ROAMING ON only) and never twitches
+		const bool toasterVoice = Voice::user == VoicePreset::Toaster;
+		if(def.routine == &makeRoutine<ToasterFidgetRoutine>) return toasterVoice;
+		if(def.routine == &makeRoutine<WanderRoutine> && (!RobotConfig::roaming || toasterVoice)) return false;
+		// CHATTER OFF: no spoken idle comments, no looking around. TOASTER: the toaster talks, and only the toaster
+		// (no object descriptions or face greetings in between).
+		const uint8_t chatter = RobotConfig::chatter.load();
+		if(chatter == static_cast<uint8_t>(ChatterMode::Off) &&
+		   (def.routine == &makeRoutine<RambleRoutine> || def.routine == &makeRoutine<ObserveRoutine>)) return false;
+		if(chatter == static_cast<uint8_t>(ChatterMode::Toaster) &&
+		   (def.routine == &makeRoutine<ObserveRoutine> || def.routine == &makeRoutine<PersonRoutine>)) return false;
 		return def.routine != &makeRoutine<BreathRoutine> || Voice::user == VoicePreset::Vader;
+	};
+
+	// TOASTER chatter: the toaster speaks most of the time
+	const bool toaster = RobotConfig::chatter.load() == static_cast<uint8_t>(ChatterMode::Toaster);
+	const auto weightOf = [toaster](const RandomRoutineDef& def) -> size_t{
+		return (toaster && def.routine == &makeRoutine<RambleRoutine>) ? 8 : def.weight;
 	};
 
 	size_t weightSum = 0;
 	for(const RandomRoutineDef& routineDef : RandomRoutines){
-		if(usable(routineDef)) weightSum += routineDef.weight;
+		if(usable(routineDef)) weightSum += weightOf(routineDef);
 	}
+
+	if(weightSum == 0) return nullptr;
 
 	const size_t random = rand() % (weightSum + 1);
 
@@ -255,7 +286,7 @@ RoutineFactory IdleState::pickRandomRoutine() const{
 			continue;
 		}
 
-		sum += routineDef.weight;
+		sum += weightOf(routineDef);
 
 		if(random <= sum){
 			return routineDef.routine;
@@ -266,7 +297,38 @@ RoutineFactory IdleState::pickRandomRoutine() const{
 }
 
 void IdleState::rescheduleRandomRoutine(){
-	nextRandomRoutineTime = millis() + (rand() % (MaxRandomDelay - MinRandomDelay) + MinRandomDelay);
+	// Custom (NUIT): delay between idle routines by CHATTER (the user's table)
+	TickType_t minDelay = 30 * 60000;
+	TickType_t maxDelay = 60 * 60000;
+
+	switch(static_cast<ChatterMode>(RobotConfig::chatter.load())){
+		case ChatterMode::Off:
+			// Nothing to say; with ROAMING OFF too there is nothing to do at all, so sleep until the settings change
+			if(!RobotConfig::roaming){
+				nextRandomRoutineTime = UINT64_MAX;
+				return;
+			}
+			minDelay = 15 * 60000;
+			maxDelay = 30 * 60000;
+			break;
+		case ChatterMode::Rare:
+			minDelay = 60 * 60000;
+			maxDelay = 180 * 60000;
+			break;
+		case ChatterMode::Frequent:
+			minDelay = 10 * 60000;
+			maxDelay = 20 * 60000;
+			break;
+		case ChatterMode::Toaster:
+			minDelay = 3 * 60000;
+			maxDelay = 8 * 60000;
+			break;
+		case ChatterMode::Normal:
+		default:
+			break;
+	}
+
+	nextRandomRoutineTime = millis() + (rand() % (maxDelay - minDelay) + minDelay);
 }
 
 int64_t IdleState::getDynamicTickInterval() const{
@@ -274,6 +336,7 @@ int64_t IdleState::getDynamicTickInterval() const{
 		CMF_LOG(IdleState, LogLevel::Error, "Event Bag is nullptr.");
 		return -1;
 	}
+
 
 	if(eventBag->probe()){
 		return 0;
@@ -288,6 +351,10 @@ int64_t IdleState::getDynamicTickInterval() const{
 		if(lastTickingState == Routine::TickingState::Block){
 			return portMAX_DELAY;
 		}
+	}
+
+	if(nextRandomRoutineTime == UINT64_MAX){
+		return portMAX_DELAY;
 	}
 
 	if(millis() >= nextRandomRoutineTime){
@@ -316,6 +383,10 @@ void IdleState::onMotion(MotionType type){
 
 bool IdleState::canStartInstantRoutine() const{
 	return sm->getActiveRoutine() == nullptr && !sm->isTransitionPending();
+}
+
+void IdleState::onRobotConfig(const RobotConfigData& data){
+	// Nothing to do here: the broadcast wakes the ticking thread, maybeStartRandomRoutine() compares the settings
 }
 
 void IdleState::onRCData(const RCData& data){

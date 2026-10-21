@@ -8,6 +8,7 @@
 #include <Scenarios.h>
 #include <Entity/AsyncEntity.h>
 #include <Event/EventBroadcaster.h>
+#include <mutex>
 
 class Com : public AsyncEntity {
 	GENERATED_BODY(Com, AsyncEntity, CONSTRUCTOR_PACK(BLE::Server* ))
@@ -110,6 +111,7 @@ private:
 
 	static constexpr size_t BufSize = 256;
 	PSRAMByteBuffer txBuf;
+	std::mutex txMutex;
 
 	void sendData(BB::State state, BB::Action action);
 	void sendData(BB::State state, BB::Action action, size_t size, const uint8_t* data);

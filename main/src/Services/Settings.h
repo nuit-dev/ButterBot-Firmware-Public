@@ -41,14 +41,14 @@ private:
 
 	void load();
 
-	RobotConfigData robotConfig{ 80, 0, 40, 1 };
+	RobotConfigData robotConfig{ 80, 0, 40, 1, 2 };
 	static constexpr const char* VolumeKey = "Volume";
 	static constexpr const char* NightModeKey = "NightMode";
 	static constexpr const char* NightVolumeKey = "NightVol";
 	static constexpr const char* RoamingKey = "Roaming";
+	static constexpr const char* ChatterKey = "Chatter";
 	uint8_t voice = 0;
 	static constexpr const char* VoiceKey = "Voice";
 };
-
 
 #endif //BUTTERBOT_FIRMWARE_SETTINGS_H

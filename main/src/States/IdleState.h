@@ -36,6 +36,9 @@ private:
 	EventBag* eventBag = nullptr;
 	uint64_t lastBtnPressTime;
 	uint64_t nextRandomRoutineTime;
+	// Custom (NUIT): CHATTER / ROAMING as the schedule was last made for (see rescheduleRandomRoutine)
+	uint8_t lastChatterMode = 2;
+	bool lastRoaming = true;
 	Com* com = nullptr;
 	Routine::TickingState lastTickingState = Routine::TickingState::None;
 	bool buttonHeld = false;
@@ -48,6 +51,8 @@ private:
 private:
 	void onCommand(Ctrl::Command cmd);
 	void onRCData(const RCData& data);
+	// Custom (NUIT): only wakes the ticking thread, so a changed CHATTER / ROAMING is picked up at once
+	void onRobotConfig(const RobotConfigData& data);
 	void onButtonEvent(int button, ISRButtonInput::Action action);
 	void onMotion(MotionType type);
 
