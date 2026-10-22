@@ -11,7 +11,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
 - Quote texts: `components/ButterBot-Common/src/Phrases.cpp` (`OverklokingPhrases`, `OverklokingBestPhrases`,
   `BenderPhrases`, `UltronPhrases`). `pronounced` = spoken (US English TTS spelling), `shown` = controller text.
   Keep ButterBot-Common identical in both repos.
-- Proximity sensor filter: `Ctrl::SensorsAllOn/FrontOff/FloorOff/AllOff` commands (end of `Ctrl::Command`),
+- (Removed in v7, replaced by the CircuitMess 1.1 sensor settings) Proximity sensor filter: `Ctrl::SensorsAllOn/FrontOff/FloorOff/AllOff` commands (end of `Ctrl::Command`),
   handled in `main.cpp`, applied in `Services/BaseBoard` (`setProximityEnabled`). A disabled front sensor reads
   "no obstacle", a disabled bottom sensor reads "on the ground". Robot boots with all sensors on.
 - Voice presets NORMAL / HAWKING / VADER / HAL 9000 / TALKIE TOASTER / YODA:
@@ -149,6 +149,24 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - `sdkconfig`: `CONFIG_LOG_MAXIMUM_EQUALS_DEFAULT` (maximum log level INFO instead of DEBUG, `main.cpp` sets WARN at
     runtime anyway) and silent assertions (`CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_SILENT`, expressions are still
     evaluated): the app is 207 KB smaller (8,818,544 -> 8,606,240 bytes), ~219 KB of the app partition are left.
+
+- v7 - merged CircuitMess 1.1 (robot e3b8dd5, branch `merge-upstream-1.1`):
+  - Upstream: `Ctrl::Settings` / `SettingsData` (front sensor Off / On, bottom sensor Off / Reduced / On, `ActivityMode`
+    Off / Chill / Active / Hyper), `Idle::SettingsChange` / `SettingsSync`, `Scenario::SettingsActivity` voice commands,
+    `SettingsActivityRoutine`, `Settings` blob fields, `BaseBoard` proximity modes, `IdleState` split into
+    `AnyPowerRandomRoutines` / `UnpluggedRandomRoutines` with `applyActivityMode()` (5-10 min, 1-5 min, 15-60 s),
+    `Bonds.h` (inline `BLE::isBonded`, our `Bonds.cpp` is gone), `factory` partition 8640k.
+  - Removed (replaced by the above): our sensor filter (`Ctrl::Sensors*`, `BaseBoard::setProximityEnabled`), CHATTER
+    (`ChatterMode`, `RobotConfigData::chatter`, `RobotConfig::chatter`, NVS key "Chatter") and `RambleKind::Toaster` /
+    `Phrase::RambleToaster` (toaster lines are only used with the TALKIE TOASTER voice, via `Phrases::toasterMode`).
+  - Kept on top of upstream's `IdleState`: ROAMING (no `WanderRoutine` with ROAMING OFF), `BreathRoutine` (VADER voice
+    only), `ToasterFidgetRoutine` instead of Wander with the TOASTER voice, night mode, and the toaster talk: TOASTER
+    voice + `ActivityMode::Hyper` = Observe and Person off, Ramble weight 8, fidget weight 4, no time-of-day or
+    Thursday comments (`RambleRoutine`). `Com::sendData` still holds `txMutex`.
+  - `Toaster_Settings*` lines for the ten new settings phrases; ActivityMode names in the TOASTER voice ("Idle activity
+    toaster").
+  - The partition table changed: all partitions have to be flashed once. `dependencies.lock` moved a component (0.6.0 to
+    0.8.0), so the release images are built from the new build output.
 
 ## Flashing the robot
 

@@ -28,6 +28,14 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ## What's new
 
+### v7 – CircuitMess update 1.1
+- Includes the official CircuitMess update 1.1: proximity sensor settings (front on / off, bottom off / reduced / on), idle **activity levels** you can also change by voice ("be chill", "be active", "go crazy"), battery and Bluetooth improvements and new phrases.
+- **Settings changed:** the mod's SENSOR and CHATTER rows are replaced by the official **FRONT**, **BOTTOM** and **ACTIVITY** rows. ACTIVITY is OFF / CHILL / ACTIVE / HYPER – the robot starts something on its own every 5–10 min, 1–5 min or 15–60 s. With VOICE → TALKIE TOASTER the highest level is called **TOASTER**: the robot then talks only toaster lines (no object descriptions or face greetings in between) and fidgets on the spot. Toaster lines are only used with the TALKIE TOASTER voice now; the other voices keep the original comments.
+- Kept: ROAMING, all the voices and menu quotes, night mode, volume, the clock, STARTUP.
+- The 1.1 settings phrases ("Front sensor on", "Idle activity chill", ...) have toaster versions too.
+- ⚠️ **The partition table changed** (app partition 8640k, like the official one). Flash the full image or all the parts once – flashing the app alone is not enough. Settings, owner face and IR codes are kept.
+- Flash together with the [controller mod v7](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v7).
+
 ### v6.2 – toaster pronunciation and room to grow
 - The 1,015 toaster lines were run through the robot's speech synthesizer on a computer, word by word, and about fifty now sound right: Maillard, Nichrome, bruschetta, ciabatta, challah, Worcestershire, "wouldn't" and friends, and verbs it used to read as nouns ("to present the toast", "you cannot refuse"). What the controller shows is unchanged.
 - The firmware is 207 KB smaller (no assert messages or debug logs, which were never shown), so about 219 KB of the app partition are free for what comes next.
@@ -142,7 +150,7 @@ python -m esptool -p <PORT> flash_id
 **Option A – one file** (`…-robot-full.bin`): simplest, but erases the robot's saved settings, owner face and IR codes (like a stock restore).
 
 ```shell
-python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v6.2-robot-full.bin
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v7-robot-full.bin
 ```
 
 **Option B – keep settings** (`…-robot-parts.zip`): unzip, then run in the unzipped folder:
