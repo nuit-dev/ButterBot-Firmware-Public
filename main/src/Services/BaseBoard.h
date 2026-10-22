@@ -50,12 +50,6 @@ public:
 	 */
 	void requestProximityState();
 
-	/**
-	 * Custom (NUIT): ignore a proximity sensor. A disabled front sensor always reads "no obstacle",
-	 * a disabled bottom sensor always reads "on the ground". Applies to every routine and to lift detection.
-	 */
-	void setProximityEnabled(bool front, bool bottom);
-
 	ChargingState getChargingState();
 
 	/**
@@ -152,9 +146,6 @@ private:
 		// uint16_t proximityBottomThreshold = 0;  // removed — absolute thresholds superseded
 	} registerState;
 
-	// Custom (NUIT): proximity sensor filter, see setProximityEnabled()
-	std::atomic<bool> proxFrontEnabled{ true };
-	std::atomic<bool> proxBottomEnabled{ true };
 
 	/**
 	 * Needed for synchronization of registerState access from public methods and internal thread.
@@ -196,6 +187,12 @@ private:
 	};
 
 	void processEventData(const EventData& eventData);
+	void processProximityReading(ProxState front, ProxState bot);
+	void processProximityChange(ProxSensor sensor, bool inThreshold);
+
+	bool isFrontSensorOff() const;
+	bool isBottomSensorOff() const;
+	bool isBottomSensorOn() const;
 };
 
 

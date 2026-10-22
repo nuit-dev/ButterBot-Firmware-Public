@@ -30,13 +30,16 @@
 
 DEFINE_LOG(IdleState)
 
-const std::vector<IdleState::RandomRoutineDef> IdleState::RandomRoutines = {
+const std::vector<IdleState::RandomRoutineDef> IdleState::AnyPowerRandomRoutines = {
 	{ &makeRoutine<RambleRoutine>, 3 },
 	{ &makeRoutine<ObserveRoutine>, 1 },
-	{ &makeRoutine<WanderRoutine>, 2 },
-	{ &makeRoutine<ToasterFidgetRoutine>, 2 }, // Custom (NUIT): TALKIE TOASTER voice only, instead of Wander
-	{ &makeRoutine<PersonRoutine>, 1 },
 	{ &makeRoutine<BreathRoutine>, 2 }, // Custom (NUIT): only while VOICE is VADER, see pickRandomRoutine
+};
+
+const std::vector<IdleState::RandomRoutineDef> IdleState::UnpluggedRandomRoutines = {
+	{ &makeRoutine<WanderRoutine>, 2 },
+	{ &makeRoutine<PersonRoutine>, 1 },
+	{ &makeRoutine<ToasterFidgetRoutine>, 2 }, // Custom (NUIT): TALKIE TOASTER voice only, instead of Wander
 };
 
 const std::array<EventRoutineFactory, static_cast<uint8_t>(EventBag::EventType::COUNT)> IdleState::EventRoutines = {
@@ -55,9 +58,15 @@ const std::array<EventRoutineFactory, static_cast<uint8_t>(EventBag::EventType::
 };
 
 IdleState::IdleState(BBStateMachine* sm) : State(sm){
-	lastChatterMode = RobotConfig::chatter.load();
-	lastRoaming = RobotConfig::roaming.load();
-	rescheduleRandomRoutine();
+	if(ServiceLocator::SettingsInstance){
+		applyActivityMode(ServiceLocator::SettingsInstance->get().activityMode);
+	}
+
+	if(activityMode == ActivityMode::Off){
+		nextRandomRoutineTime = UINT64_MAX;
+	} else{
+		nextRandomRoutineTime = millis() + minRandomDelay;
+	}
 
 	const Application* app = ApplicationStatics::getApplication();
 	eventBag = app->getService<EventBag>();
@@ -82,7 +91,7 @@ IdleState::IdleState(BBStateMachine* sm) : State(sm){
 
 	sm->bindState(com->OnCommand, this, &IdleState::onCommand);
 	sm->bindState(com->OnRCData, this, &IdleState::onRCData);
-	sm->bindState(com->OnRobotConfig, this, &IdleState::onRobotConfig);
+	sm->bindState(com->OnSettings, this, &IdleState::onSettings);
 
 	auto motionService = app->getService<MotionService>();
 	if(motionService == nullptr){
@@ -212,7 +221,7 @@ void IdleState::startScenario(const EventBag::EventData& data){
 }
 
 void IdleState::maybeStartRandomRoutine(){
-	if(RandomRoutines.empty()){
+	if(AnyPowerRandomRoutines.empty() && UnpluggedRandomRoutines.empty()){
 		rescheduleRandomRoutine();
 		return;
 	}
@@ -222,14 +231,11 @@ void IdleState::maybeStartRandomRoutine(){
 		return;
 	}
 
-	// Custom (NUIT): CHATTER or ROAMING changed on the controller - make a new schedule now
-	if(RobotConfig::chatter.load() != lastChatterMode || RobotConfig::roaming.load() != lastRoaming){
-		lastChatterMode = RobotConfig::chatter.load();
-		lastRoaming = RobotConfig::roaming.load();
-		rescheduleRandomRoutine();
+	if(activityMode == ActivityMode::Off){
+		return;
 	}
 
-	if(nextRandomRoutineTime == UINT64_MAX || millis() < nextRandomRoutineTime){
+	if(millis() < nextRandomRoutineTime){
 		return;
 	}
 
@@ -248,34 +254,37 @@ void IdleState::maybeStartRandomRoutine(){
 }
 
 RoutineFactory IdleState::pickRandomRoutine() const{
-	// Custom (NUIT): the breath is an idle "comment" only with the VADER voice; ROAMING OFF = no wandering
-	const auto usable = [](const RandomRoutineDef& def){
-		// Custom (NUIT): TALKIE TOASTER voice twitches on the spot instead of wandering (also with ROAMING OFF);
-		// every other voice wanders (ROAMING ON only) and never twitches
-		const bool toasterVoice = Voice::user == VoicePreset::Toaster;
+	bool unplugged = true;
+	if(BaseBoard* baseBoard = ApplicationStatics::getApplication()->getService<BaseBoard>()){
+		unplugged = baseBoard->getChargingState() == ChargingState::Unplugged;
+	}
+
+	// Custom (NUIT): the TALKIE TOASTER voice twitches on the spot instead of wandering (also with ROAMING OFF); every
+	// other voice wanders (ROAMING ON only) and never twitches. The breath is an idle "comment" only with the VADER voice.
+	// The highest activity level in the TOASTER voice is the full toaster: it talks, and only the toaster (no object
+	// descriptions or face greetings in between), and fidgets about a third of the turns.
+	const bool toasterVoice = Voice::user == VoicePreset::Toaster;
+	const bool toasterTalk = toasterVoice && activityMode == ActivityMode::Hyper;
+	const auto usable = [toasterVoice, toasterTalk](const RandomRoutineDef& def){
 		if(def.routine == &makeRoutine<ToasterFidgetRoutine>) return toasterVoice;
 		if(def.routine == &makeRoutine<WanderRoutine> && (!RobotConfig::roaming || toasterVoice)) return false;
-		// CHATTER OFF: no spoken idle comments, no looking around. TOASTER: the toaster talks, and only the toaster
-		// (no object descriptions or face greetings in between).
-		const uint8_t chatter = RobotConfig::chatter.load();
-		if(chatter == static_cast<uint8_t>(ChatterMode::Off) &&
-		   (def.routine == &makeRoutine<RambleRoutine> || def.routine == &makeRoutine<ObserveRoutine>)) return false;
-		if(chatter == static_cast<uint8_t>(ChatterMode::Toaster) &&
-		   (def.routine == &makeRoutine<ObserveRoutine> || def.routine == &makeRoutine<PersonRoutine>)) return false;
+		if(toasterTalk && (def.routine == &makeRoutine<ObserveRoutine> || def.routine == &makeRoutine<PersonRoutine>)) return false;
 		return def.routine != &makeRoutine<BreathRoutine> || Voice::user == VoicePreset::Vader;
 	};
-
-	// TOASTER chatter: the toaster speaks most of the time (and fidgets about a third of the turns in the TOASTER voice)
-	const bool toaster = RobotConfig::chatter.load() == static_cast<uint8_t>(ChatterMode::Toaster);
-	const auto weightOf = [toaster](const RandomRoutineDef& def) -> size_t{
-		if(toaster && def.routine == &makeRoutine<RambleRoutine>) return 8;
-		if(toaster && def.routine == &makeRoutine<ToasterFidgetRoutine>) return 4;
+	const auto weightOf = [toasterTalk](const RandomRoutineDef& def) -> size_t{
+		if(toasterTalk && def.routine == &makeRoutine<RambleRoutine>) return 8;
+		if(toasterTalk && def.routine == &makeRoutine<ToasterFidgetRoutine>) return 4;
 		return def.weight;
 	};
 
 	size_t weightSum = 0;
-	for(const RandomRoutineDef& routineDef : RandomRoutines){
+	for(const RandomRoutineDef& routineDef : AnyPowerRandomRoutines){
 		if(usable(routineDef)) weightSum += weightOf(routineDef);
+	}
+	if(unplugged){
+		for(const RandomRoutineDef& routineDef : UnpluggedRandomRoutines){
+			if(usable(routineDef)) weightSum += weightOf(routineDef);
+		}
 	}
 
 	if(weightSum == 0) return nullptr;
@@ -283,7 +292,23 @@ RoutineFactory IdleState::pickRandomRoutine() const{
 	const size_t random = rand() % (weightSum + 1);
 
 	size_t sum = 0;
-	for(const RandomRoutineDef& routineDef : RandomRoutines){
+	for(const RandomRoutineDef& routineDef : AnyPowerRandomRoutines){
+		if(routineDef.weight == 0 || !usable(routineDef)){
+			continue;
+		}
+
+		sum += weightOf(routineDef);
+
+		if(random <= sum){
+			return routineDef.routine;
+		}
+	}
+
+	if(!unplugged){
+		return nullptr;
+	}
+
+	for(const RandomRoutineDef& routineDef : UnpluggedRandomRoutines){
 		if(routineDef.weight == 0 || !usable(routineDef)){
 			continue;
 		}
@@ -299,38 +324,46 @@ RoutineFactory IdleState::pickRandomRoutine() const{
 }
 
 void IdleState::rescheduleRandomRoutine(){
-	// Custom (NUIT): delay between idle routines by CHATTER (the user's table)
-	TickType_t minDelay = 30 * 60000;
-	TickType_t maxDelay = 60 * 60000;
-
-	switch(static_cast<ChatterMode>(RobotConfig::chatter.load())){
-		case ChatterMode::Off:
-			// Nothing to say; with ROAMING OFF too there is nothing to do at all, so sleep until the settings change
-			if(!RobotConfig::roaming){
-				nextRandomRoutineTime = UINT64_MAX;
-				return;
-			}
-			minDelay = 15 * 60000;
-			maxDelay = 30 * 60000;
-			break;
-		case ChatterMode::Rare:
-			minDelay = 60 * 60000;
-			maxDelay = 180 * 60000;
-			break;
-		case ChatterMode::Frequent:
-			minDelay = 10 * 60000;
-			maxDelay = 20 * 60000;
-			break;
-		case ChatterMode::Toaster:
-			minDelay = 3 * 60000;
-			maxDelay = 8 * 60000;
-			break;
-		case ChatterMode::Normal:
-		default:
-			break;
+	if(activityMode == ActivityMode::Off){
+		nextRandomRoutineTime = UINT64_MAX;
+		return;
 	}
 
-	nextRandomRoutineTime = millis() + (rand() % (maxDelay - minDelay) + minDelay);
+	nextRandomRoutineTime = millis() + (rand() % (maxRandomDelay - minRandomDelay) + minRandomDelay);
+}
+
+void IdleState::applyActivityMode(ActivityMode mode){
+	activityMode = mode;
+
+	switch(mode){
+		case ActivityMode::Off:
+			minRandomDelay = 0;
+			maxRandomDelay = 0;
+			break;
+		case ActivityMode::Chill:
+			minRandomDelay = 5 * MinuteMs;
+			maxRandomDelay = 10 * MinuteMs;
+			break;
+		case ActivityMode::Hyper:
+			minRandomDelay = MinuteMs / 4;
+			maxRandomDelay = 1 * MinuteMs;
+			break;
+		case ActivityMode::Active:
+		default:
+			activityMode = ActivityMode::Active;
+			minRandomDelay = 1 * MinuteMs;
+			maxRandomDelay = 5 * MinuteMs;
+			break;
+	}
+}
+
+void IdleState::onSettings(const SettingsData& data){
+	if(data.activityMode == activityMode){
+		return;
+	}
+
+	applyActivityMode(data.activityMode);
+	rescheduleRandomRoutine();
 }
 
 int64_t IdleState::getDynamicTickInterval() const{
@@ -338,7 +371,6 @@ int64_t IdleState::getDynamicTickInterval() const{
 		CMF_LOG(IdleState, LogLevel::Error, "Event Bag is nullptr.");
 		return -1;
 	}
-
 
 	if(eventBag->probe()){
 		return 0;
@@ -355,7 +387,7 @@ int64_t IdleState::getDynamicTickInterval() const{
 		}
 	}
 
-	if(nextRandomRoutineTime == UINT64_MAX){
+	if(activityMode == ActivityMode::Off){
 		return portMAX_DELAY;
 	}
 
@@ -385,10 +417,6 @@ void IdleState::onMotion(MotionType type){
 
 bool IdleState::canStartInstantRoutine() const{
 	return sm->getActiveRoutine() == nullptr && !sm->isTransitionPending();
-}
-
-void IdleState::onRobotConfig(const RobotConfigData& data){
-	// Nothing to do here: the broadcast wakes the ticking thread, maybeStartRandomRoutine() compares the settings
 }
 
 void IdleState::onRCData(const RCData& data){

@@ -2,6 +2,7 @@
 #include "driver/gpio.h"
 #include "Pins.hpp"
 #include <Util/stdafx.h>
+#include <Util/ServiceLocator.h>
 
 DEFINE_LOG(BaseBoard)
 
@@ -52,7 +53,7 @@ void BaseBoard::setMotors(int8_t left, int8_t right){
 	regStateMutex.lock();
 	registerState.motorLeft = left;
 	registerState.motorRight = right;
-	const bool scanning = registerState.proximityScanning;
+	const bool scanning = registerState.proximityScanning && !isBottomSensorOn();
 	regStateMutex.unlock();
 
 	if(scanning){
@@ -79,7 +80,7 @@ void BaseBoard::setMotorLeft(int8_t value){
 
 	regStateMutex.lock();
 	registerState.motorLeft = value;
-	const bool scanning = registerState.proximityScanning;
+	const bool scanning = registerState.proximityScanning && !isBottomSensorOn();
 	regStateMutex.unlock();
 
 	if(scanning){
@@ -104,7 +105,7 @@ void BaseBoard::setMotorRight(int8_t value){
 
 	regStateMutex.lock();
 	registerState.motorRight = value;
-	const bool scanning = registerState.proximityScanning;
+	const bool scanning = registerState.proximityScanning && !isBottomSensorOn();
 	regStateMutex.unlock();
 
 	if(scanning){
@@ -161,16 +162,6 @@ void BaseBoard::setProximityFrontThreshold([[maybe_unused]] uint16_t threshold){
 void BaseBoard::setProximityBotThreshold([[maybe_unused]] uint16_t threshold){
 	// registerState.proximityBottomThreshold = threshold;
 	// ESP_ERROR_CHECK(dev->writeRegister(ProximityBottomThresh, (uint8_t*)&threshold, 2));
-}
-
-void BaseBoard::setProximityEnabled(bool front, bool bottom){
-	const bool changed = (proxFrontEnabled != front) || (proxBottomEnabled != bottom);
-	proxFrontEnabled = front;
-	proxBottomEnabled = bottom;
-	if(changed){
-		// Fresh (filtered) reading so listeners like MotionService drop a stale "lifted"/"obstacle" state
-		requestProximityState();
-	}
 }
 
 void BaseBoard::requestProximityState(){
@@ -282,23 +273,63 @@ void IRAM_ATTR BaseBoard::motorBoardISR(void* arg){
 	portYIELD_FROM_ISR(higherPrioTask);
 }
 
+bool BaseBoard::isFrontSensorOff() const{
+	if(!ServiceLocator::SettingsInstance){
+		return false;
+	}
+
+	return ServiceLocator::SettingsInstance->get().frontSensor == FrontSensorMode::Off;
+}
+
+bool BaseBoard::isBottomSensorOff() const{
+	if(!ServiceLocator::SettingsInstance){
+		return false;
+	}
+
+	return ServiceLocator::SettingsInstance->get().bottomSensor == BottomSensorMode::Off;
+}
+
+bool BaseBoard::isBottomSensorOn() const{
+	if(!ServiceLocator::SettingsInstance){
+		return false;
+	}
+
+	return ServiceLocator::SettingsInstance->get().bottomSensor == BottomSensorMode::On;
+}
+
+void BaseBoard::processProximityReading(ProxState front, ProxState bot){
+	if(isFrontSensorOff()){
+		front = ProxState::Uncovered;
+	}
+
+	if(isBottomSensorOff()){
+		bot = ProxState::Covered;
+	}
+
+	onProximityReading.broadcast(front, bot);
+}
+
+void BaseBoard::processProximityChange(ProxSensor sensor, bool inThreshold){
+	if(sensor == ProxSensor::Front && isFrontSensorOff()){
+		return;
+	}
+
+	if(sensor == ProxSensor::Bottom && isBottomSensorOff()){
+		return;
+	}
+
+	printf("[BaseBoard][%llu] %s sensor %s\n", millis(), sensor == ProxSensor::Front ? "Front" : "Bottom", inThreshold ? "covered" : "uncovered");
+	onProximityChange.broadcast(sensor, inThreshold);
+}
+
 void BaseBoard::processEventData(const EventData& eventData){
 	switch(eventData.type){
-		case EventType::ProximityReading:{
-			// Custom (NUIT): disabled sensors report a safe state
-			const ProxState front = proxFrontEnabled ? eventData.data.proxReading.front : ProxState::Uncovered;
-			const ProxState bot = proxBottomEnabled ? eventData.data.proxReading.bot : ProxState::Covered;
-			onProximityReading.broadcast(front, bot);
+		case EventType::ProximityReading:
+			processProximityReading(eventData.data.proxReading.front, eventData.data.proxReading.bot);
 			break;
-		}
-		case EventType::ProximityThresholdReached:{
-			const ProxSensor sensor = eventData.data.proxThresholdReached.sensor;
-			if((sensor == ProxSensor::Front && !proxFrontEnabled) || (sensor == ProxSensor::Bottom && !proxBottomEnabled)){
-				break; // Custom (NUIT): disabled sensor, drop the event
-			}
-			onProximityChange.broadcast(sensor, eventData.data.proxThresholdReached.inThreshold);
+		case EventType::ProximityThresholdReached:
+			processProximityChange(eventData.data.proxThresholdReached.sensor, eventData.data.proxThresholdReached.inThreshold);
 			break;
-		}
 		case EventType::ChargeStateChanged:
 			onChargeChanged.broadcast(eventData.data.chargeStateChanged);
 			break;

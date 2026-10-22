@@ -35,6 +35,8 @@ public:
 	DECLARE_EVENT(OnScenarioEvent, Com, BB::Action::Scenario, ScenarioData);
 	OnScenarioEvent OnScenario{ this };
 
+	DECLARE_EVENT(OnSettingsEvent, Com, SettingsData);
+	OnSettingsEvent OnSettings{ this };
 	// Custom (NUIT)
 	DECLARE_EVENT(OnRobotConfigEvent, Com, RobotConfigData);
 	OnRobotConfigEvent OnRobotConfig{ this };

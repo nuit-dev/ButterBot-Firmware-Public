@@ -217,14 +217,13 @@ protected:
 
 		ServiceLocator::SettingsInstance = std::make_unique<Settings>();
 
-		// Custom (NUIT): volume, night mode and chatter frequency as last set on the controller
+		// Custom (NUIT): volume and night mode as last set on the controller
 		{
 			const RobotConfigData config = ServiceLocator::SettingsInstance->getRobotConfig();
 			RobotConfig::volume = config.volume;
 			RobotConfig::nightMode = config.nightMode;
 			RobotConfig::nightVolume = config.nightVolume;
 			RobotConfig::roaming = config.roaming != 0;
-			RobotConfig::chatter = config.chatter;
 			// VOICE as last set on the controller, so the startup greeting already uses it
 			setVoice(static_cast<VoicePreset>(ServiceLocator::SettingsInstance->getVoice()));
 		}
@@ -299,6 +298,7 @@ protected:
 
 		com->OnConnStatus.bind(this, &Butterbot::onConnStatus);
 		com->OnCommand.bind(this, &Butterbot::onCommand);
+		com->OnSettings.bind(this, &Butterbot::onSettings);
 		com->OnRobotConfig.bind(this, &Butterbot::onRobotConfig); // Custom (NUIT)
 		com->OnSetTime.bind(this, &Butterbot::onSetTime); // Custom (NUIT)
 
@@ -369,6 +369,10 @@ private:
 	StrongObjectPtr<Timer> forceOffTimer;
 	inline static bool muted = false;
 
+	static constexpr Phrase ActivityModePhrases[] = { Phrase::SettingsActivityOff, Phrase::SettingsActivityChill, Phrase::SettingsActivityActive, Phrase::SettingsActivityHyper };
+	static constexpr Phrase FrontSensorModePhrases[] = { Phrase::SettingsFrontSensorOff, Phrase::SettingsFrontSensorOn };
+	static constexpr Phrase BottomSensorModePhrases[] = { Phrase::SettingsBottomSensorOff, Phrase::SettingsBottomSensorReduced, Phrase::SettingsBottomSensorOn };
+
 	static constexpr const char* UnmuteSounds[] = {
 		"/spiffs/listen/lasers1/phaseJump1.aac",
 		"/spiffs/listen/lasers1/phaseJump2.aac",
@@ -436,10 +440,6 @@ private:
 	void onCommand(const Ctrl::Command command){
 		// Custom (NUIT): proximity sensor filter from the controller's Settings screen
 		switch(command){
-			case Ctrl::SensorsAllOn:    setSensors(true, true); return;
-			case Ctrl::SensorsFrontOff: setSensors(false, true); return;
-			case Ctrl::SensorsFloorOff: setSensors(true, false); return;
-			case Ctrl::SensorsAllOff:   setSensors(false, false); return;
 			// Custom (NUIT): TTS voice preset from the controller's Settings screen
 			case Ctrl::VoiceNormal:  setVoice(VoicePreset::Normal); return;
 			case Ctrl::VoiceHawking: setVoice(VoicePreset::Hawking); return;
@@ -457,11 +457,89 @@ private:
 		toggleMute();
 	}
 
-	void setSensors(bool front, bool floor){
-		if(BaseBoard* baseBoard = getService<BaseBoard>()){
-			baseBoard->setProximityEnabled(front, floor);
+	void onSettings(const SettingsData& data){
+		if(!ServiceLocator::SettingsInstance){
+			return;
+		}
+
+		SettingsStruct settings = ServiceLocator::SettingsInstance->get();
+		const bool frontChanged = settings.frontSensor != data.frontSensor;
+		const bool bottomChanged = settings.bottomSensor != data.bottomSensor;
+		const bool activityChanged = settings.activityMode != data.activityMode;
+		if(!frontChanged && !bottomChanged && !activityChanged){
+			return;
+		}
+
+		settings.frontSensor = data.frontSensor;
+		settings.bottomSensor = data.bottomSensor;
+		settings.activityMode = data.activityMode;
+		ServiceLocator::SettingsInstance->set(settings);
+		ServiceLocator::SettingsInstance->store();
+
+		if(frontChanged || bottomChanged){
+			if(BaseBoard* baseBoard = getService<BaseBoard>()){
+				baseBoard->requestProximityState();
+			}
+		}
+
+		Audio* audio = getService<Audio>();
+		Com* com = getService<Com>();
+		BBStateMachine* sm = getService<BBStateMachine>();
+		if(audio == nullptr || com == nullptr || sm == nullptr){
+			return;
+		}
+
+		if(sm->getActiveRoutine() != nullptr || audio->isPlaying()){
+			return;
+		}
+
+		const size_t frontIndex = static_cast<size_t>(data.frontSensor);
+		const size_t bottomIndex = static_cast<size_t>(data.bottomSensor);
+		const size_t activityIndex = static_cast<size_t>(data.activityMode);
+		bool spoken = false;
+
+		if(frontChanged && frontIndex < std::size(FrontSensorModePhrases)){
+			speakSettingsChange(audio, com, FrontSensorModePhrases[frontIndex]);
+			spoken = true;
+		}
+
+		if(bottomChanged && bottomIndex < std::size(BottomSensorModePhrases)){
+			speakSettingsChange(audio, com, BottomSensorModePhrases[bottomIndex]);
+			spoken = true;
+		}
+
+		if(activityChanged && activityIndex < std::size(ActivityModePhrases)){
+			speakSettingsChange(audio, com, ActivityModePhrases[activityIndex]);
+			spoken = true;
+		}
+
+		if(spoken){
+			com->sendData(BB::State::Idle, BB::Action::Idle::None);
 		}
 	}
+
+	static void speakSettingsChange(Audio* audio, Com* com, Phrase phrase){
+		if(!ServiceLocator::SpeechAudioGenInstance || !ServiceLocator::SpeechGenInstance){
+			return;
+		}
+
+		const int16_t id = Phrases::get(phrase);
+		if(id < 0){
+			return;
+		}
+
+		com->sendData(BB::State::Idle, BB::Action::Idle::SettingsChange, SettingsChangeData{ .phrase = phrase, .id = static_cast<uint8_t>(id) });
+
+		const std::string text = Phrases::map(phrase, id);
+		if(text.empty()){
+			return;
+		}
+
+		std::unique_ptr<SpeechAudioSource> source = std::make_unique<SpeechAudioSource>(SpeechGen::InputType::Text, text);
+		audio->play(ServiceLocator::SpeechAudioGenInstance.get(), std::move(source));
+		audio->waitEnd(portMAX_DELAY);
+	}
+
 
 	void setVoice(VoicePreset preset){
 		Voice::user = preset; // used from the next utterance on
@@ -500,18 +578,16 @@ private:
 		config.nightVolume = std::clamp<uint8_t>(config.nightVolume, 10, 100);
 		if(config.nightMode > static_cast<uint8_t>(NightMode::From00)) config.nightMode = 0;
 		config.roaming = config.roaming != 0;
-		if(config.chatter > static_cast<uint8_t>(ChatterMode::Toaster)) config.chatter = static_cast<uint8_t>(ChatterMode::Normal);
 
 		RobotConfig::volume = config.volume;
 		RobotConfig::nightMode = config.nightMode;
 		RobotConfig::nightVolume = config.nightVolume;
 		RobotConfig::roaming = config.roaming;
-		RobotConfig::chatter = config.chatter;
 
 		if(ServiceLocator::SettingsInstance){
 			const RobotConfigData stored = ServiceLocator::SettingsInstance->getRobotConfig();
 			if(stored.volume != config.volume || stored.nightMode != config.nightMode || stored.nightVolume != config.nightVolume ||
-			   stored.roaming != config.roaming || stored.chatter != config.chatter){
+			   stored.roaming != config.roaming){
 				ServiceLocator::SettingsInstance->setRobotConfig(config);
 			}
 		}

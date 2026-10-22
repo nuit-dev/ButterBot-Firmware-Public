@@ -147,6 +147,20 @@ void Com::tick(float deltaTime) noexcept{
 		return;
 	}
 
+	if(command == Ctrl::Settings){
+		if(buf.size() < sizeof(Ctrl::Command) + sizeof(SettingsData)){
+			CMF_LOG(Com, LogLevel::Warning, "Dropping Settings command with truncated payload (%zu bytes)", buf.size());
+			return;
+		}
+
+		SettingsData settingsData{};
+		memcpy(&settingsData, buf.data() + sizeof(Ctrl::Command), sizeof(SettingsData));
+
+		OnSettings.broadcast(settingsData);
+
+		return;
+	}
+
 	// Custom (NUIT)
 	if(command == Ctrl::RobotConfig){
 		if(buf.size() < sizeof(Ctrl::Command) + RobotConfigDataV4Size){
@@ -154,7 +168,7 @@ void Com::tick(float deltaTime) noexcept{
 			return;
 		}
 
-		RobotConfigData config{}; // a v4 controller sends 3 bytes, roaming stays at its default (on), chatter stays normal (2)
+		RobotConfigData config{}; // a v4 controller sends 3 bytes, roaming stays at its default (on)
 		memcpy(&config, buf.data() + sizeof(Ctrl::Command), std::min(buf.size() - sizeof(Ctrl::Command), sizeof(RobotConfigData)));
 		OnRobotConfig.broadcast(config);
 		return;

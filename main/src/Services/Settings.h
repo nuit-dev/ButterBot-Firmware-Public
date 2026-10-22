@@ -13,6 +13,9 @@ struct SettingsStruct {
 	float ledStrobePeriod = 0.4f;
 	float ledBreathePeriod = 2.0f;
 	bool gasModuleConfigured = false;
+	FrontSensorMode frontSensor = FrontSensorMode::On;
+	BottomSensorMode bottomSensor = BottomSensorMode::Reduced;
+	ActivityMode activityMode = ActivityMode::Active;
 };
 
 class Settings {
@@ -41,12 +44,11 @@ private:
 
 	void load();
 
-	RobotConfigData robotConfig{ 80, 0, 40, 1, 2 };
+	RobotConfigData robotConfig{ 80, 0, 40, 1 };
 	static constexpr const char* VolumeKey = "Volume";
 	static constexpr const char* NightModeKey = "NightMode";
 	static constexpr const char* NightVolumeKey = "NightVol";
 	static constexpr const char* RoamingKey = "Roaming";
-	static constexpr const char* ChatterKey = "Chatter";
 	uint8_t voice = 0;
 	static constexpr const char* VoiceKey = "Voice";
 };

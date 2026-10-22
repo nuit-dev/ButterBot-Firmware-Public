@@ -40,7 +40,6 @@ void Settings::setRobotConfig(const RobotConfigData& config){
 	nvs_set_u8(handle, NightModeKey, config.nightMode);
 	nvs_set_u8(handle, NightVolumeKey, config.nightVolume);
 	nvs_set_u8(handle, RoamingKey, config.roaming);
-	nvs_set_u8(handle, ChatterKey, config.chatter);
 	nvs_commit(handle);
 }
 
@@ -67,6 +66,35 @@ void Settings::load(){
 	if(nvs_get_u8(handle, NightModeKey, &val) == ESP_OK && val <= static_cast<uint8_t>(NightMode::From00)) robotConfig.nightMode = val;
 	if(nvs_get_u8(handle, NightVolumeKey, &val) == ESP_OK && val >= 10 && val <= 100) robotConfig.nightVolume = val;
 	if(nvs_get_u8(handle, RoamingKey, &val) == ESP_OK && val <= 1) robotConfig.roaming = val;
-	if(nvs_get_u8(handle, ChatterKey, &val) == ESP_OK && val <= static_cast<uint8_t>(ChatterMode::Toaster)) robotConfig.chatter = val;
 	if(nvs_get_u8(handle, VoiceKey, &val) == ESP_OK && val <= static_cast<uint8_t>(VoicePreset::Yoda)) voice = val;
+
+	switch(settingsStruct.frontSensor){
+		case FrontSensorMode::Off:
+		case FrontSensorMode::On:
+			break;
+		default:
+			settingsStruct.frontSensor = SettingsStruct().frontSensor;
+			break;
+	}
+
+	switch(settingsStruct.bottomSensor){
+		case BottomSensorMode::Off:
+		case BottomSensorMode::Reduced:
+		case BottomSensorMode::On:
+			break;
+		default:
+			settingsStruct.bottomSensor = SettingsStruct().bottomSensor;
+			break;
+	}
+
+	switch(settingsStruct.activityMode){
+		case ActivityMode::Off:
+		case ActivityMode::Chill:
+		case ActivityMode::Active:
+		case ActivityMode::Hyper:
+			break;
+		default:
+			settingsStruct.activityMode = SettingsStruct().activityMode;
+			break;
+	}
 }
