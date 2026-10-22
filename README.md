@@ -28,6 +28,11 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ## What's new
 
+### v6.2 – toaster pronunciation and room to grow
+- The 1,015 toaster lines were run through the robot's speech synthesizer on a computer, word by word, and about fifty now sound right: Maillard, Nichrome, bruschetta, ciabatta, challah, Worcestershire, "wouldn't" and friends, and verbs it used to read as nouns ("to present the toast", "you cannot refuse"). What the controller shows is unchanged.
+- The firmware is 207 KB smaller (no assert messages or debug logs, which were never shown), so about 219 KB of the app partition are free for what comes next.
+- Robot only – works with the [controller mod v6](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v6), nothing changed there.
+
 ### v6.1 – bigger toaster twitches
 - The toaster fidget is easier to see: each twitch is 25–40 degrees instead of 8–18, which hardly showed. With CHATTER → TOASTER it is about every third idle turn.
 - Robot only – works with the [controller mod v6](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v6), nothing changed there.
@@ -137,7 +142,7 @@ python -m esptool -p <PORT> flash_id
 **Option A – one file** (`…-robot-full.bin`): simplest, but erases the robot's saved settings, owner face and IR codes (like a stock restore).
 
 ```shell
-python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v6.1-robot-full.bin
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v6.2-robot-full.bin
 ```
 
 **Option B – keep settings** (`…-robot-parts.zip`): unzip, then run in the unzipped folder:

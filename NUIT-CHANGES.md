@@ -50,7 +50,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - Character quotes (Darth, Hawking, HAL, Daisy, Toaster, Yoda, Croatian) are never changed.
 - `components/ButterBot-Common/CMakeLists.txt` builds `Phrases.cpp` with `-Os` (rarely called, saves ~6 KB).
 - Partition table (v3): `factory` app partition 8432k -> 8624k, all data partitions after it moved by 0x30000
-  (they are found by name, not by address). ~16 KB of the app partition are free (v6), ~44 KB of flash left at the end.
+  (they are found by name, not by address). ~219 KB of the app partition are free (v6.2), ~44 KB of flash left at the end.
   NVS stays at 0x9000, so settings, owner face and IR codes survive the upgrade.
 - v4 - volume, night mode, clock:
   - `Ctrl::RobotConfig` (`RobotConfigData`: volume, `NightMode`, night volume) and `Ctrl::SetTime` (`SetTimeData`,
@@ -141,6 +141,14 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   a moment to get going, so a few degrees hardly moved the robot), pauses 150-350 ms. `pickRandomRoutine()`: with
   CHATTER TOASTER and the TOASTER voice the fidget weighs 4 (was 2, same as Wander). The fidget still does nothing while
   the robot is charging (also on USB).
+- v6.2 - the 1,015 toaster lines were checked with a host build of `components/flite` (the same sources as the robot;
+  print the phones of every word of every `pronounced` string): 48 lines respelled (`pronounced` only, `shown` is
+  untouched) - "my yar" for Maillard, "nigh crome", "bye metallic", "brooskettah", "cha bahta", "hahlah", "wooster sher",
+  "coodent" / "shoodent" / "woodent" / "duzzent" / "izzent" for the contractions, and the verbs flite read as nouns
+  ("to pre zent", "ruhfyooz", "Liv long"). `ButterBot-Common` is identical in both repos again.
+  - `sdkconfig`: `CONFIG_LOG_MAXIMUM_EQUALS_DEFAULT` (maximum log level INFO instead of DEBUG, `main.cpp` sets WARN at
+    runtime anyway) and silent assertions (`CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_SILENT`, expressions are still
+    evaluated): the app is 207 KB smaller (8,818,544 -> 8,606,240 bytes), ~219 KB of the app partition are left.
 
 ## Flashing the robot
 
