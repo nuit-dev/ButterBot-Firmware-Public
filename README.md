@@ -28,6 +28,10 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ## What's new
 
+### v6.1 – bigger toaster twitches
+- The toaster fidget is easier to see: each twitch is 25–40 degrees instead of 8–18, which hardly showed. With CHATTER → TOASTER it is about every third idle turn.
+- Robot only – works with the [controller mod v6](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v6), nothing changed there.
+
 ### v6 – Talkie Toaster chatter
 - **Settings → CHATTER** (on the controller, between VOICE and STARTUP) sets how often the robot says something on its own while idle: **OFF / RARE / NORMAL / OFTEN / TOASTER**. The gaps are RARE 1–3 h, NORMAL 30–60 min, OFTEN 10–20 min and TOASTER 3–8 min. OFF is silent and does not look around; with ROAMING OFF as well the robot does nothing at all while idle. The change applies at once, no waiting for the old schedule, and the robot remembers it.
 - **CHATTER → TOASTER** is the full toaster: the robot only says Talkie Toaster lines, whatever VOICE is set to – 1,015 of them: toast offers, bready facts, Red Dwarf style monologues. No time-of-day or Thursday comments, no object descriptions or face greetings in between, and the toaster gets most of the turns. With VOICE → TALKIE TOASTER the ordinary idle comments come from the same list. The other voices keep the original CircuitMess comments.
@@ -133,7 +137,7 @@ python -m esptool -p <PORT> flash_id
 **Option A – one file** (`…-robot-full.bin`): simplest, but erases the robot's saved settings, owner face and IR codes (like a stock restore).
 
 ```shell
-python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v6-robot-full.bin
+python -m esptool --chip esp32s3 -p <PORT> -b 460800 --before default_reset --after no_reset write_flash 0 ButterBot-OVERKLOKING-v6.1-robot-full.bin
 ```
 
 **Option B – keep settings** (`…-robot-parts.zip`): unzip, then run in the unzipped folder:

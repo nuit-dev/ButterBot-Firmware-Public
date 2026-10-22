@@ -265,10 +265,12 @@ RoutineFactory IdleState::pickRandomRoutine() const{
 		return def.routine != &makeRoutine<BreathRoutine> || Voice::user == VoicePreset::Vader;
 	};
 
-	// TOASTER chatter: the toaster speaks most of the time
+	// TOASTER chatter: the toaster speaks most of the time (and fidgets about a third of the turns in the TOASTER voice)
 	const bool toaster = RobotConfig::chatter.load() == static_cast<uint8_t>(ChatterMode::Toaster);
 	const auto weightOf = [toaster](const RandomRoutineDef& def) -> size_t{
-		return (toaster && def.routine == &makeRoutine<RambleRoutine>) ? 8 : def.weight;
+		if(toaster && def.routine == &makeRoutine<RambleRoutine>) return 8;
+		if(toaster && def.routine == &makeRoutine<ToasterFidgetRoutine>) return 4;
+		return def.weight;
 	};
 
 	size_t weightSum = 0;

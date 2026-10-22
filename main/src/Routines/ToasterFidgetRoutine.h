@@ -24,6 +24,9 @@ private:
 	// Rotation timing reference (WanderRoutine / VoiceTurn180Routine): 180 degrees at +-100 takes 4000 ms
 	static constexpr uint32_t MsPerDegree = 4000 / 180;
 	static constexpr int8_t MotorSpeed = 100;
+	// A twitch has to be this big to be seen: the motors need a moment to get going, so a few degrees hardly move it
+	static constexpr uint16_t MinTwitchDeg = 25;
+	static constexpr uint16_t MaxTwitchDeg = 40;
 	static constexpr uint8_t MaxSteps = 7;
 
 	Step steps[MaxSteps] = {};

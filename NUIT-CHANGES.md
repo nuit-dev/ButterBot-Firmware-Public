@@ -125,7 +125,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     ticking thread: `maybeStartRandomRoutine()` compares CHATTER / ROAMING with the values the schedule was made for and
     reschedules. `getDynamicTickInterval()` sleeps until woken while nothing is scheduled (UINT64_MAX).
   - `pickRandomRoutine()`: CHATTER Off drops Ramble and Observe; Toaster drops Observe and Person and gives Ramble
-    weight 8. Identical to upstream otherwise (`shouldYieldToEvent`, `endActiveRoutine` untouched).
+    weight 8 and, with the TOASTER voice, the fidget weight 4 (else 2, like Wander). Identical to upstream otherwise (`shouldYieldToEvent`, `endActiveRoutine` untouched).
   - `RambleKind::Toaster` / `Phrase::RambleToaster` (end of the enums): CHATTER Toaster speaks `Toaster_Ramble`
     (1,015 lines) whatever the VOICE, no time-of-day or Thursday kinds. The plain `Ramble` list is the original one
     again; the Toaster table (`Phrases::toasterMode`) uses `Toaster_Ramble` for `Ramble` as before. The 15 hand-picked
@@ -137,6 +137,10 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     holds `txMutex` around the shared `txBuf` (it is called from several threads; the BLE send only takes the short
     connection lock, no lock cycle).
   - ~16 KB of the app partition are left (8,814,096 of 8,830,976 bytes).
+- v6.1 - `ToasterFidgetRoutine`: twitches of 25-40 degrees (`MinTwitchDeg` / `MaxTwitchDeg`, were 8-18: the motors need
+  a moment to get going, so a few degrees hardly moved the robot), pauses 150-350 ms. `pickRandomRoutine()`: with
+  CHATTER TOASTER and the TOASTER voice the fidget weighs 4 (was 2, same as Wander). The fidget still does nothing while
+  the robot is charging (also on USB).
 
 ## Flashing the robot
 

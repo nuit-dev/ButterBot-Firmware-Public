@@ -14,11 +14,11 @@ ToasterFidgetRoutine::~ToasterFidgetRoutine(){
 }
 
 void ToasterFidgetRoutine::build(){
-	// 2 twitches (a right, a left) or 3 (a right, a + c left, c right), a and c 8-18 degrees, the first direction
+	// 2 twitches (a right, a left) or 3 (a right, a + c left, c right), a and c 25-40 degrees, the first direction
 	// random. Right and left always add up to the same angle, so it ends facing where it started.
 	const bool startRight = rand() % 2;
-	const uint16_t a = 8 + rand() % 11;
-	const uint16_t c = 8 + rand() % 11;
+	const uint16_t a = MinTwitchDeg + rand() % (MaxTwitchDeg - MinTwitchDeg + 1);
+	const uint16_t c = MinTwitchDeg + rand() % (MaxTwitchDeg - MinTwitchDeg + 1);
 	const bool three = rand() % 2;
 
 	const uint16_t degrees[3] = { a, three ? static_cast<uint16_t>(a + c) : a, c };
@@ -32,7 +32,7 @@ void ToasterFidgetRoutine::build(){
 			degrees[i] * MsPerDegree
 		};
 		if(i != count - 1){
-			steps[stepCount++] = { 0, 0, 120u + static_cast<uint32_t>(rand() % 160) };
+			steps[stepCount++] = { 0, 0, 150u + static_cast<uint32_t>(rand() % 200) };
 		}
 	}
 }
