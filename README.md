@@ -79,7 +79,7 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 - Flash together with the [controller mod v4.2](https://github.com/nuit-dev/ButterBotCtrl-Firmware-Public/releases/tag/v4.2). Mixing with v4.1 works too, roaming then simply stays on.
 
 ### v4.1 – talking to ButterBot
-- **[Voice commands](docs/VOICE-COMMANDS.md):** all 237 phrases the robot understands, in one table by what they do, with the key words to say clearly, the follow-up answers (dice, notifications, dancing) and tips for being understood.
+- **[Voice commands](docs/VOICE-COMMANDS.md):** all 248 phrases the robot understands, in one table by what they do, with the key words to say clearly, the follow-up answers (dice, notifications, dancing) and tips for being understood.
 - **[Vision](docs/VISION.md):** the 10 objects its camera recognises, how it decides, and how face recognition (owner or stranger) works.
 - Both are generated from the firmware source with `tools/gen_voice_commands.py`, so they stay in sync. What the robot answers is not listed – that part is for you to find out.
 - **Yoda mode** turns sentences around more naturally. Questions and sentences that start with why / if / but stay as they are, and only the part up to the next comma moves – "A joke about latency, I have, but you would have to wait for it."

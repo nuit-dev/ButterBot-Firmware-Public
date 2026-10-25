@@ -186,6 +186,12 @@ CATS = [
       ('Nothing playing', 'PhoneNotPlayingPhrases', ()), ('Next', 'PhoneNextTrackPhrases', ()),
       ('Previous', 'PhonePrevTrackPhrases', ()), ('Play', 'PhonePlayMusicPhrases', ()),
       ('Stop', 'PhoneStopMusicPhrases', ())]),
+    ('Activity level', [('SettingsActivity', None)],
+     'Sets how often the robot does something on its own (Settings, ACTIVITY on the controller). "Activity mode" '
+     'or "idle activity" asks which level.', None,
+     [('Asks which level', 'SettingsAskActivityPhrases', ()), ('Off', 'SettingsActivityOffPhrases', ()),
+      ('Chill', 'SettingsActivityChillPhrases', ()), ('Active', 'SettingsActivityActivePhrases', ()),
+      ('Hyper', 'SettingsActivityHyperPhrases', ())]),
     ('Shut down', [('Shutdown', None)], 'Turns the robot off.', None,
      [('Answers', 'TurningOff', ())]),
 ]

@@ -1,6 +1,6 @@
 # Talking to ButterBot
 
-Everything you can say to the robot: **237 phrases**. What it answers is left for you to find out. What the camera recognises is in [VISION.md](VISION.md).
+Everything you can say to the robot: **248 phrases**. What it answers is left for you to find out. What the camera recognises is in [VISION.md](VISION.md).
 
 Generated from the firmware source (`Scenarios.h`, `Phrases.cpp`) with `tools/gen_voice_commands.py`, so it matches what is on the robot.
 
@@ -49,6 +49,7 @@ Recognition runs offline on the robot (Espressif ESP-SR MultiNet, English). It i
 | **Infrared remote: use, list, forget** | After training, just say your own phrase in listening mode and the robot sends that IR signal. "Forget infrared" asks which phrase to forget. *Needs the IR module.* | **list** **infrared** commands<br>what **infrared** **commands** do you know<br>**forget** **infrared**<br>**remove** **infrared**<br>**delete** **infrared**<br>**forget** **all** **infrared**<br>**delete** **all** **infrared**<br>**clear** **all** **infrared** |
 | **Phone: notifications** | Reads the phone notifications and asks after every 5 if it should continue: answer "yes" or "no". *Needs a phone connected over Bluetooth.* | list **notifications**<br>show **notifications**<br>what **notifications** do I have<br>read my **notifications**<br>check **notifications**<br>do I have **notifications**<br>tell me my **notifications** |
 | **Phone: music** | Controls the music player on the phone. *Needs a phone connected over Bluetooth.* | what is **playing**<br>what song is **playing**<br>what is this **song**<br>current **song**<br>what **music** is **playing**<br>tell me what is **playing**<br>what is **playing** right now<br>**next** song<br>**skip** song<br>play **next**<br>**next** track<br>**previous** song<br>play **previous**<br>**previous** track<br>**play** **music**<br>**start** **music**<br>**start** **playback**<br>**resume** **music**<br>**stop** **music**<br>**pause** **music**<br>**stop** **playback**<br>**pause** **playback** |
+| **Activity level** | Sets how often the robot does something on its own (Settings, ACTIVITY on the controller). "Activity mode" or "idle activity" asks which level. | **activity** **mode**<br>**idle** **activity**<br>**activity** **off**<br>**activity** **chill**<br>**activity** **active**<br>**activity** **hyper**<br>**be** **chill**<br>**be** **active**<br>**be** **hyper**<br>**calm** **down**<br>go **crazy** |
 | **Shut down** | Turns the robot off. | **shut** **down**<br>**deactivate**<br>**shut** yourself **down**<br>**power** **down**<br>turn **yourself** **off**<br>**battery** **off** |
 
 ## Follow-up answers
