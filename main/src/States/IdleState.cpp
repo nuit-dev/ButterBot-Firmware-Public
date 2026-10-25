@@ -1,4 +1,5 @@
 #include "IdleState.h"
+#include <algorithm>
 #include <Core/Application.h>
 #include <Statics/ApplicationStatics.h>
 #include <Routines/MotionRoutine.h>
@@ -67,6 +68,7 @@ IdleState::IdleState(BBStateMachine* sm) : State(sm){
 	} else{
 		nextRandomRoutineTime = millis() + minRandomDelay;
 	}
+	rescheduleTalk();
 
 	const Application* app = ApplicationStatics::getApplication();
 	eventBag = app->getService<EventBag>();
@@ -235,25 +237,37 @@ void IdleState::maybeStartRandomRoutine(){
 		return;
 	}
 
-	if(millis() < nextRandomRoutineTime){
+	// Custom (NUIT): talking routines have their own timer; when both are due, the talk goes first.
+	const bool talk = millis() >= nextTalkTime;
+	if(!talk && millis() < nextRandomRoutineTime){
 		return;
 	}
 
 	// Custom (NUIT): night mode - no idle comments, wandering or breathing
 	if(RobotConfig::night){
-		rescheduleRandomRoutine();
+		if(talk) rescheduleTalk();
+		else rescheduleRandomRoutine();
 		return;
 	}
 
-	RoutineFactory nextRandomRoutine = pickRandomRoutine();
+	RoutineFactory nextRandomRoutine = pickRandomRoutine(talk);
 	if(nextRandomRoutine != nullptr){
 		sm->startRoutine(nextRandomRoutine);
 	}
 
-	rescheduleRandomRoutine();
+	if(talk) rescheduleTalk();
+	else rescheduleRandomRoutine();
 }
 
-RoutineFactory IdleState::pickRandomRoutine() const{
+bool IdleState::isTalkRoutine(RoutineFactory routine){
+	return routine == &makeRoutine<RambleRoutine> || routine == &makeRoutine<ObserveRoutine> || routine == &makeRoutine<PersonRoutine>;
+}
+
+bool IdleState::isToasterTalk() const{
+	return Voice::user == VoicePreset::Toaster && activityMode == ActivityMode::Hyper;
+}
+
+RoutineFactory IdleState::pickRandomRoutine(bool talk) const{
 	bool unplugged = true;
 	if(BaseBoard* baseBoard = ApplicationStatics::getApplication()->getService<BaseBoard>()){
 		unplugged = baseBoard->getChargingState() == ChargingState::Unplugged;
@@ -262,18 +276,17 @@ RoutineFactory IdleState::pickRandomRoutine() const{
 	// Custom (NUIT): the TALKIE TOASTER voice twitches on the spot instead of wandering (also with ROAMING OFF); every
 	// other voice wanders (ROAMING ON only) and never twitches. The breath is an idle "comment" only with the VADER voice.
 	// The highest activity level in the TOASTER voice is the full toaster: it talks, and only the toaster (no object
-	// descriptions or face greetings in between), and fidgets about a third of the turns.
+	// descriptions or face greetings in between). talk picks from the talking routines, otherwise from the silent ones.
 	const bool toasterVoice = Voice::user == VoicePreset::Toaster;
-	const bool toasterTalk = toasterVoice && activityMode == ActivityMode::Hyper;
-	const auto usable = [toasterVoice, toasterTalk](const RandomRoutineDef& def){
+	const bool toasterTalk = isToasterTalk();
+	const auto usable = [toasterVoice, toasterTalk, talk](const RandomRoutineDef& def){
+		if(isTalkRoutine(def.routine) != talk) return false;
 		if(def.routine == &makeRoutine<ToasterFidgetRoutine>) return toasterVoice;
 		if(def.routine == &makeRoutine<WanderRoutine> && (!RobotConfig::roaming || toasterVoice)) return false;
 		if(toasterTalk && (def.routine == &makeRoutine<ObserveRoutine> || def.routine == &makeRoutine<PersonRoutine>)) return false;
 		return def.routine != &makeRoutine<BreathRoutine> || Voice::user == VoicePreset::Vader;
 	};
-	const auto weightOf = [toasterTalk](const RandomRoutineDef& def) -> size_t{
-		if(toasterTalk && def.routine == &makeRoutine<RambleRoutine>) return 8;
-		if(toasterTalk && def.routine == &makeRoutine<ToasterFidgetRoutine>) return 4;
+	const auto weightOf = [](const RandomRoutineDef& def) -> size_t{
 		return def.weight;
 	};
 
@@ -329,7 +342,32 @@ void IdleState::rescheduleRandomRoutine(){
 		return;
 	}
 
-	nextRandomRoutineTime = millis() + (rand() % (maxRandomDelay - minRandomDelay) + minRandomDelay);
+	// Custom (NUIT): in the full toaster the silent pool is only the fidget; it twitches at the ACTIVE pace, not every few seconds.
+	TickType_t minDelay = minRandomDelay;
+	TickType_t maxDelay = maxRandomDelay;
+	if(isToasterTalk()){
+		minDelay = 1 * MinuteMs;
+		maxDelay = 5 * MinuteMs;
+	}
+
+	nextRandomRoutineTime = millis() + (rand() % (maxDelay - minDelay) + minDelay);
+}
+
+void IdleState::rescheduleTalk(){
+	if(activityMode == ActivityMode::Off){
+		nextTalkTime = UINT64_MAX;
+		return;
+	}
+
+	// Custom (NUIT): the full toaster talks every 2-5 min, the other levels use applyActivityMode's talk delays.
+	TickType_t minDelay = minTalkDelay;
+	TickType_t maxDelay = maxTalkDelay;
+	if(isToasterTalk()){
+		minDelay = 2 * MinuteMs;
+		maxDelay = 5 * MinuteMs;
+	}
+
+	nextTalkTime = millis() + (rand() % (maxDelay - minDelay) + minDelay);
 }
 
 void IdleState::applyActivityMode(ActivityMode mode){
@@ -339,20 +377,28 @@ void IdleState::applyActivityMode(ActivityMode mode){
 		case ActivityMode::Off:
 			minRandomDelay = 0;
 			maxRandomDelay = 0;
+			minTalkDelay = 0;
+			maxTalkDelay = 0;
 			break;
 		case ActivityMode::Chill:
 			minRandomDelay = 5 * MinuteMs;
 			maxRandomDelay = 10 * MinuteMs;
+			minTalkDelay = 2 * HourMs;
+			maxTalkDelay = 5 * HourMs;
 			break;
 		case ActivityMode::Hyper:
 			minRandomDelay = MinuteMs / 4;
 			maxRandomDelay = 1 * MinuteMs;
+			minTalkDelay = 5 * MinuteMs;
+			maxTalkDelay = 15 * MinuteMs;
 			break;
 		case ActivityMode::Active:
 		default:
 			activityMode = ActivityMode::Active;
 			minRandomDelay = 1 * MinuteMs;
 			maxRandomDelay = 5 * MinuteMs;
+			minTalkDelay = 30 * MinuteMs;
+			maxTalkDelay = 90 * MinuteMs;
 			break;
 	}
 }
@@ -364,6 +410,7 @@ void IdleState::onSettings(const SettingsData& data){
 
 	applyActivityMode(data.activityMode);
 	rescheduleRandomRoutine();
+	rescheduleTalk();
 }
 
 int64_t IdleState::getDynamicTickInterval() const{
@@ -391,11 +438,12 @@ int64_t IdleState::getDynamicTickInterval() const{
 		return portMAX_DELAY;
 	}
 
-	if(millis() >= nextRandomRoutineTime){
+	const uint64_t next = std::min(nextRandomRoutineTime, nextTalkTime);
+	if(millis() >= next){
 		return 0;
 	}
 
-	return nextRandomRoutineTime - millis();
+	return next - millis();
 }
 
 void IdleState::onCommand(Ctrl::Command cmd){

@@ -28,6 +28,11 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 
 ## What's new
 
+### Next (v7.1, in testing, not released yet – build from source)
+- **Talking is properly graded now.** Comments, object descriptions and greetings have their own timer, separate from driving and fidgeting: ACTIVITY CHILL talks every 2–5 hours (a few times a day), ACTIVE every 30–90 min, HYPER every 5–15 min, and TOASTER (TALKIE TOASTER voice) every 2–5 min. Driving, fidgeting and the Vader breath keep the official pace (5–10 min, 1–5 min, 15–60 s); in TOASTER the fidget comes every 1–5 min.
+- **All 1,015 toaster lines rewritten:** short and silly, in plain words, Talkie Toaster all the way. Half of them are under 53 characters (was 94), none over 89 (was 147), so they are easy to follow by ear. Every word went through the robot's speech synthesizer on a computer again; about thirty are respelled for the voice only (the screen shows them normally).
+- Flash together with the controller from its repo (it shows the same lines).
+
 ### v7 – CircuitMess update 1.1
 - Includes the official CircuitMess update 1.1: proximity sensor settings (front on / off, bottom off / reduced / on), idle **activity levels** you can also change by voice ("be chill", "be active", "go crazy"), battery and Bluetooth improvements and new phrases.
 - **Settings changed:** the mod's SENSOR and CHATTER rows are replaced by the official **FRONT**, **BOTTOM** and **ACTIVITY** rows. ACTIVITY is OFF / CHILL / ACTIVE / HYPER – the robot starts something on its own every 5–10 min, 1–5 min or 15–60 s. With VOICE → TALKIE TOASTER the highest level is called **TOASTER**: the robot then talks only toaster lines (no object descriptions or face greetings in between) and fidgets on the spot. Toaster lines are only used with the TALKIE TOASTER voice now; the other voices keep the original comments.

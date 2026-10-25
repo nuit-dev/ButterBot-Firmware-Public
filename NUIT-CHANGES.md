@@ -167,6 +167,19 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     toaster").
   - The partition table changed: all partitions have to be flashed once. `dependencies.lock` moved a component (0.6.0 to
     0.8.0), so the release images are built from the new build output.
+- v7.1 (in testing) - quieter, shorter toaster:
+  - `IdleState`: the talking routines (`RambleRoutine`, `ObserveRoutine`, `PersonRoutine`, see `isTalkRoutine`) run on
+    their own timer `nextTalkTime` (`rescheduleTalk`, delays set in `applyActivityMode`): Chill 2-5 h, Active 30-90 min,
+    Hyper 5-15 min, toaster talk (TOASTER voice + Hyper) 2-5 min. The silent ones (Wander, ToasterFidget, Breath) keep
+    upstream's `nextRandomRoutineTime`; in toaster talk the fidget uses 1-5 min instead of 15-60 s. When both are due,
+    the talk goes first. `pickRandomRoutine(talk)` picks from one pool; the toaster weights 8 / 4 are gone.
+    `getDynamicTickInterval` sleeps until the earlier of the two times. Night mode reschedules both.
+  - `Toaster_Ramble`: all 1,015 lines rewritten (median 53 characters, was 94; max 89, was 147), plain words, no
+    verbatim Red Dwarf dialogue. Checked with the host flite build (`lex_lookup` per word plus `lts_apply` against the
+    system dictionary); 97 `pronounced` strings differ from `shown`: "I am", "izzent" / "duzzent" / "woodent" /
+    "diddent" / "havvent" / "wuzzent", "cha bahta", "Hahlah", "brooskettah", "Panettonay", "Vedge ee mite",
+    "Liv long", "Cloze your eyes", "Bo ties", "ruhfyooz", "Car pay dee em", "Et too, Broo tay".
+  - App 47 KB smaller (8,581,296 bytes).
 
 ## Flashing the robot
 

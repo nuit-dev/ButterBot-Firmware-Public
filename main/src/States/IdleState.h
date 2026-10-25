@@ -30,6 +30,7 @@ private:
 	static const std::array<EventRoutineFactory, static_cast<uint8_t>(EventBag::EventType::COUNT)> EventRoutines;
 
 	static constexpr TickType_t MinuteMs = 60000;
+	static constexpr TickType_t HourMs = 60 * MinuteMs;
 
 private:
 	EventBag* eventBag = nullptr;
@@ -38,6 +39,11 @@ private:
 	ActivityMode activityMode = ActivityMode::Active;
 	TickType_t minRandomDelay = 1 * MinuteMs;
 	TickType_t maxRandomDelay = 5 * MinuteMs;
+	// Custom (NUIT): routines that talk (idle comments, object descriptions, greetings) run on their own, much slower
+	// timer, see applyActivityMode; the silent ones (wander, fidget, breath) keep the timer above.
+	uint64_t nextTalkTime;
+	TickType_t minTalkDelay = 30 * MinuteMs;
+	TickType_t maxTalkDelay = 90 * MinuteMs;
 	Com* com = nullptr;
 	Routine::TickingState lastTickingState = Routine::TickingState::None;
 	bool buttonHeld = false;
@@ -63,8 +69,11 @@ private:
 	void startEventRoutine(const EventBag::EventData& data);
 	void startScenario(const EventBag::EventData& data);
 	void maybeStartRandomRoutine();
-	RoutineFactory pickRandomRoutine() const;
+	RoutineFactory pickRandomRoutine(bool talk) const;
+	static bool isTalkRoutine(RoutineFactory routine);
+	bool isToasterTalk() const;
 	void rescheduleRandomRoutine();
+	void rescheduleTalk();
 };
 
 #endif //BUTTERBOT_FIRMWARE_IDLESTATE_H
