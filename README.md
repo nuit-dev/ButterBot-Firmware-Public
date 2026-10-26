@@ -31,6 +31,7 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 ### Next (v7.1, in testing, not released yet – build from source)
 - **Talking is properly graded now.** Comments, object descriptions and greetings have their own timer, separate from driving and fidgeting: ACTIVITY CHILL talks every 2–5 hours (a few times a day), ACTIVE every 30–90 min, HYPER every 5–15 min, and TOASTER (TALKIE TOASTER voice) every 2–5 min. Driving, fidgeting and the Vader breath keep the official pace (5–10 min, 1–5 min, 15–60 s); in TOASTER the fidget comes every 1–5 min.
 - **All 1,015 toaster lines rewritten:** short and silly, in plain words, Talkie Toaster all the way. Half of them are under 53 characters (was 94), none over 89 (was 147), so they are easy to follow by ear. Every word went through the robot's speech synthesizer on a computer again; about thirty are respelled for the voice only (the screen shows them normally).
+- **ULTRON always speaks in the stock NORMAL voice**, whatever VOICE is set to, and Yoda mode no longer turns his monologue around – like the other characters, who always keep their own voice.
 - Flash together with the controller from its repo (it shows the same lines).
 
 ### v7 – CircuitMess update 1.1

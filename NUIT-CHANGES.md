@@ -180,6 +180,8 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     "diddent" / "havvent" / "wuzzent", "cha bahta", "Hahlah", "brooskettah", "Panettonay", "Vedge ee mite",
     "Liv long", "Cloze your eyes", "Bo ties", "ruhfyooz", "Car pay dee em", "Et too, Broo tay".
   - App 47 KB smaller (8,581,296 bytes).
+  - `QuoteRoutine`: ULTRON overrides the voice to `VoicePreset::Normal`, and `isCharacterQuote` (Phrases.cpp) includes
+    `Phrase::Ultron`, so Yoda mode leaves the monologue as it is, on the robot and on the controller.
 
 ## Flashing the robot
 
