@@ -62,6 +62,8 @@ Routine::TickingState QuoteRoutine::tick(float deltaTime){
 			case QuoteData::Category::Daisy: Voice::setOverride(VoicePreset::Hal); voiceOverridden = true; break;
 			case QuoteData::Category::Toaster: Voice::setOverride(VoicePreset::Toaster); voiceOverridden = true; break;
 			case QuoteData::Category::Yoda: Voice::setOverride(VoicePreset::Yoda); voiceOverridden = true; break;
+			// Ultron's monologue is always in the stock voice, whatever VOICE is set to
+			case QuoteData::Category::Ultron: Voice::setOverride(VoicePreset::Normal); voiceOverridden = true; break;
 			default: break;
 		}
 
