@@ -68,7 +68,14 @@ IdleState::IdleState(BBStateMachine* sm) : State(sm){
 	} else{
 		nextRandomRoutineTime = millis() + minRandomDelay;
 	}
-	rescheduleTalk();
+
+	// Custom (NUIT): keep the talk countdown across interactions; if it ran out meanwhile, talk a minute from now
+	if(savedTalkTime != 0 && savedTalkMode == activityMode && savedTalkToaster == isToasterTalk() && activityMode != ActivityMode::Off){
+		nextTalkTime = std::max<uint64_t>(savedTalkTime, millis() + MinuteMs);
+		savedTalkTime = nextTalkTime;
+	} else{
+		rescheduleTalk();
+	}
 
 	const Application* app = ApplicationStatics::getApplication();
 	eventBag = app->getService<EventBag>();
@@ -354,8 +361,12 @@ void IdleState::rescheduleRandomRoutine(){
 }
 
 void IdleState::rescheduleTalk(){
+	savedTalkMode = activityMode;
+	savedTalkToaster = isToasterTalk();
+
 	if(activityMode == ActivityMode::Off){
 		nextTalkTime = UINT64_MAX;
+		savedTalkTime = 0;
 		return;
 	}
 
@@ -368,6 +379,7 @@ void IdleState::rescheduleTalk(){
 	}
 
 	nextTalkTime = millis() + (rand() % (maxDelay - minDelay) + minDelay);
+	savedTalkTime = nextTalkTime;
 }
 
 void IdleState::applyActivityMode(ActivityMode mode){
@@ -397,14 +409,14 @@ void IdleState::applyActivityMode(ActivityMode mode){
 			activityMode = ActivityMode::Active;
 			minRandomDelay = 1 * MinuteMs;
 			maxRandomDelay = 5 * MinuteMs;
-			minTalkDelay = 30 * MinuteMs;
-			maxTalkDelay = 90 * MinuteMs;
+			minTalkDelay = 15 * MinuteMs;
+			maxTalkDelay = 45 * MinuteMs;
 			break;
 	}
 }
 
 void IdleState::onSettings(const SettingsData& data){
-	if(data.activityMode == activityMode){
+	if(data.activityMode == activityMode && savedTalkToaster == isToasterTalk()){
 		return;
 	}
 

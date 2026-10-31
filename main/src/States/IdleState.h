@@ -42,8 +42,13 @@ private:
 	// Custom (NUIT): routines that talk (idle comments, object descriptions, greetings) run on their own, much slower
 	// timer, see applyActivityMode; the silent ones (wander, fidget, breath) keep the timer above.
 	uint64_t nextTalkTime;
-	TickType_t minTalkDelay = 30 * MinuteMs;
-	TickType_t maxTalkDelay = 90 * MinuteMs;
+	TickType_t minTalkDelay = 15 * MinuteMs;
+	TickType_t maxTalkDelay = 45 * MinuteMs;
+	// The talk timer outlives IdleState (it is rebuilt after every voice command, menu item or RC drive), so talking
+	// with the robot doesn't restart the countdown. Only a change of ACTIVITY level (or of the full toaster) does.
+	static inline uint64_t savedTalkTime = 0;
+	static inline ActivityMode savedTalkMode = ActivityMode::Active;
+	static inline bool savedTalkToaster = false;
 	Com* com = nullptr;
 	Routine::TickingState lastTickingState = Routine::TickingState::None;
 	bool buttonHeld = false;

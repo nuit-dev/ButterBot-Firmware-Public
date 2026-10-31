@@ -169,7 +169,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     0.8.0), so the release images are built from the new build output.
 - v7.1 (in testing) - quieter, shorter toaster:
   - `IdleState`: the talking routines (`RambleRoutine`, `ObserveRoutine`, `PersonRoutine`, see `isTalkRoutine`) run on
-    their own timer `nextTalkTime` (`rescheduleTalk`, delays set in `applyActivityMode`): Chill 2-5 h, Active 30-90 min,
+    their own timer `nextTalkTime` (`rescheduleTalk`, delays set in `applyActivityMode`): Chill 2-5 h, Active 15-45 min,
     Hyper 5-15 min, toaster talk (TOASTER voice + Hyper) 2-5 min. The silent ones (Wander, ToasterFidget, Breath) keep
     upstream's `nextRandomRoutineTime`; in toaster talk the fidget uses 1-5 min instead of 15-60 s. When both are due,
     the talk goes first. `pickRandomRoutine(talk)` picks from one pool; the toaster weights 8 / 4 are gone.
@@ -179,6 +179,9 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     system dictionary); 97 `pronounced` strings differ from `shown`: "I am", "izzent" / "duzzent" / "woodent" /
     "diddent" / "havvent" / "wuzzent", "cha bahta", "Hahlah", "brooskettah", "Panettonay", "Vedge ee mite",
     "Liv long", "Cloze your eyes", "Bo ties", "ruhfyooz", "Car pay dee em", "Et too, Broo tay".
+  - `savedTalkTime` / `savedTalkMode` / `savedTalkToaster` (static): the talk countdown survives a new `IdleState`
+    (built after every voice command, menu item, RC drive); restarted only when ACTIVITY or the full toaster changes,
+    and an overdue talk waits at least one minute after the interaction.
   - App 47 KB smaller (8,581,296 bytes).
   - `QuoteRoutine`: ULTRON overrides the voice to `VoicePreset::Normal`, and `isCharacterQuote` (Phrases.cpp) includes
     `Phrase::Ultron`, so Yoda mode leaves the monologue as it is, on the robot and on the controller.
