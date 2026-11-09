@@ -179,6 +179,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     system dictionary); 97 `pronounced` strings differ from `shown`: "I am", "izzent" / "duzzent" / "woodent" /
     "diddent" / "havvent" / "wuzzent", "cha bahta", "Hahlah", "brooskettah", "Panettonay", "Vedge ee mite",
     "Liv long", "Cloze your eyes", "Bo ties", "ruhfyooz", "Car pay dee em", "Et too, Broo tay".
+  - `pickRandomRoutine`: `ToasterFidgetRoutine` only with ROAMING ON, so ROAMING OFF has no idle movement at all.
   - `savedTalkTime` / `savedTalkMode` / `savedTalkToaster` (static): the talk countdown survives a new `IdleState`
     (built after every voice command, menu item, RC drive); restarted only when ACTIVITY or the full toaster changes,
     and an overdue talk waits at least one minute after the interaction.

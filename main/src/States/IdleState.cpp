@@ -280,15 +280,15 @@ RoutineFactory IdleState::pickRandomRoutine(bool talk) const{
 		unplugged = baseBoard->getChargingState() == ChargingState::Unplugged;
 	}
 
-	// Custom (NUIT): the TALKIE TOASTER voice twitches on the spot instead of wandering (also with ROAMING OFF); every
-	// other voice wanders (ROAMING ON only) and never twitches. The breath is an idle "comment" only with the VADER voice.
+	// Custom (NUIT): the TALKIE TOASTER voice twitches on the spot instead of wandering; every other voice wanders and
+	// never twitches. With ROAMING OFF neither of them moves. The breath is an idle "comment" only with the VADER voice.
 	// The highest activity level in the TOASTER voice is the full toaster: it talks, and only the toaster (no object
 	// descriptions or face greetings in between). talk picks from the talking routines, otherwise from the silent ones.
 	const bool toasterVoice = Voice::user == VoicePreset::Toaster;
 	const bool toasterTalk = isToasterTalk();
 	const auto usable = [toasterVoice, toasterTalk, talk](const RandomRoutineDef& def){
 		if(isTalkRoutine(def.routine) != talk) return false;
-		if(def.routine == &makeRoutine<ToasterFidgetRoutine>) return toasterVoice;
+		if(def.routine == &makeRoutine<ToasterFidgetRoutine>) return toasterVoice && RobotConfig::roaming;
 		if(def.routine == &makeRoutine<WanderRoutine> && (!RobotConfig::roaming || toasterVoice)) return false;
 		if(toasterTalk && (def.routine == &makeRoutine<ObserveRoutine> || def.routine == &makeRoutine<PersonRoutine>)) return false;
 		return def.routine != &makeRoutine<BreathRoutine> || Voice::user == VoicePreset::Vader;
