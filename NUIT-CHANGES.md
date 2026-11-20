@@ -167,7 +167,7 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
     toaster").
   - The partition table changed: all partitions have to be flashed once. `dependencies.lock` moved a component (0.6.0 to
     0.8.0), so the release images are built from the new build output.
-- v7.1 (in testing) - quieter, shorter toaster:
+- v7.1 - quieter, shorter toaster:
   - `IdleState`: the talking routines (`RambleRoutine`, `ObserveRoutine`, `PersonRoutine`, see `isTalkRoutine`) run on
     their own timer `nextTalkTime` (`rescheduleTalk`, delays set in `applyActivityMode`): Chill 2-5 h, Active 15-45 min,
     Hyper 5-15 min, toaster talk (TOASTER voice + Hyper) 2-5 min. The silent ones (Wander, ToasterFidget, Breath) keep
