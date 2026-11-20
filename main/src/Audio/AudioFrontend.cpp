@@ -444,7 +444,12 @@ void AudioFrontend::setSpeechPhrases(std::span<Phrase> phrases){
 	}
 
 	for(size_t i = 1; i <= phrases.size(); ++i){
-		ESP_ERROR_CHECK(esp_mn_commands_phoneme_add((int)i + AbortPhrasesNum, phrases[i-1].string, phrases[i-1].phonemes));
+		// MultiNet refuses phonemes it doesn't know. Skip such a phrase instead of aborting the
+		// robot on every listen; its id stays unused so the other phrases keep their indexes.
+		const auto addErr = esp_mn_commands_phoneme_add((int)i + AbortPhrasesNum, phrases[i-1].string, phrases[i-1].phonemes);
+		if(addErr != ESP_OK){
+			CMF_LOG(AudioFrontend, LogLevel::Error, "Skipping phrase %d \"%s\": %s", (int)i, phrases[i-1].string, esp_err_to_name(addErr));
+		}
 
 		// Periodically yield so this loop doesn't saturate the flash bus
 		if((i % 8) == 0){

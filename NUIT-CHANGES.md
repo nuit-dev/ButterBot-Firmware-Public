@@ -183,9 +183,15 @@ Custom OVERKLOKING mod by NUIT d.o.o. Must be flashed together with the matching
   - `savedTalkTime` / `savedTalkMode` / `savedTalkToaster` (static): the talk countdown survives a new `IdleState`
     (built after every voice command, menu item, RC drive); restarted only when ACTIVITY or the full toaster changes,
     and an overdue talk waits at least one minute after the interaction.
-  - App 47 KB smaller (8,581,296 bytes).
+  - App 47 KB smaller (8,581,952 bytes).
   - `QuoteRoutine`: ULTRON overrides the voice to `VoicePreset::Normal`, and `isCharacterQuote` (Phrases.cpp) includes
     `Phrase::Ultron`, so Yoda mode leaves the monologue as it is, on the robot and on the controller.
+  - `sdkconfig`: `SPIRAM_MALLOC_ALWAYSINTERNAL` 4096 -> 512, so the many small allocations (voice-command set, TTS)
+    go to PSRAM; drivers that need internal or DMA memory ask for it explicitly. 63 KB internal free (largest block
+    31 KB) after the controller connects. `main.cpp` prints `[MEM] boot` / `[MEM] controller connected` lines
+    (free, minimum, largest internal block).
+  - `AudioFrontend::setSpeechPhrases`: a phrase whose phonemes MultiNet refuses is skipped and logged instead of
+    `ESP_ERROR_CHECK` aborting on every listen; its id stays unused, so the other phrases keep their indexes.
 
 ## Flashing the robot
 

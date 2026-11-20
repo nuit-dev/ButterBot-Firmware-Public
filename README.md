@@ -33,6 +33,7 @@ Fork of the [CircuitMess ButterBot](https://github.com/CircuitMess/ButterBot-Fir
 - **All 1,015 toaster lines rewritten:** short and silly, in plain words, Talkie Toaster all the way. Half of them are under 53 characters (was 94), none over 89 (was 147), so they are easy to follow by ear. Every word went through the robot's speech synthesizer on a computer again; about thirty are respelled for the voice only (the screen shows them normally).
 - **ROAMING OFF now means it stays put:** the Talkie Toaster twitch on the spot is off too (it used to run even with ROAMING OFF on battery).
 - **ULTRON always speaks in the stock NORMAL voice**, whatever VOICE is set to, and Yoda mode no longer turns his monologue around – like the other characters, who always keep their own voice.
+- **More stable:** more free internal memory, which Bluetooth needs, and a voice command the speech engine can't read is skipped instead of crashing the robot every time it starts listening.
 - Flash together with the controller from its repo (it shows the same lines).
 
 ### v7 – CircuitMess update 1.1

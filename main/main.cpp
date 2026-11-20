@@ -3,6 +3,7 @@
 #include <nvs_flash.h>
 #include <esp_random.h>
 #include <cstdlib>
+#include <esp_heap_caps.h>
 #include <iterator>
 #include <memory>
 #include <Devices/SC7A20.h>
@@ -345,6 +346,15 @@ protected:
 		// Because of this, the starting state cannot be passed via constructor but has to be set later
 		stateMachine->transitionTo<IdleState>();
 		ServiceLocator::LEDControlInstance->startIdle();
+		logInternalRam("boot");
+	}
+
+	// Internal RAM is the scarce kind (BT, WiFi and task stacks need it), PSRAM is plentiful
+	static void logInternalRam(const char* when){
+		printf("[MEM] %s: internal free %u, min %u, largest %u\n", when,
+			   (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+			   (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
+			   (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
 	}
 
 	virtual void tick(float deltaTime) noexcept override{
@@ -435,6 +445,8 @@ private:
 		sendBatteryStatus();
 		sendMuteStatus();
 		sendTimeInfo(); // Custom (NUIT)
+
+		logInternalRam("controller connected");
 	}
 
 	void onCommand(const Ctrl::Command command){
